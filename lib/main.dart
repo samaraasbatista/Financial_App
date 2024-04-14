@@ -23,19 +23,16 @@ class HomePageApp extends StatefulWidget {
 class _BottomNavigationBarExampleState extends State<HomePageApp> {
   int _selectedIndex = 0;
   static const TextStyle optionStyle = TextStyle(fontSize: 35, fontWeight: FontWeight.bold);
-  static const List<Widget> _widgetOptions = <Widget>[
-    Text(
-      'Index 0: Home',
-      style: optionStyle,
+  static final List<Widget> _widgetOptions = <Widget>[
+    HomeWidget(
+
     ),
-    Text(
-      'Index 1: Business',
-      style: optionStyle,
+    UpdateBalance(
+      
     ),
-    Text(
-      'Index 2: School',
-      style: optionStyle,
-    ),
+    RegisterExpenses(
+
+    )
   ];
 
   void _onItemTapped(int index) {
@@ -76,3 +73,47 @@ class _BottomNavigationBarExampleState extends State<HomePageApp> {
   }
 }
 
+class HomeWidget extends StatelessWidget { 
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      child: Center(
+        child: Text(
+          "Tela principal, saldo total da pessoa e ordens dos gastos",
+          textDirection: TextDirection.ltr,
+        ),),
+    );
+    throw UnimplementedError();
+  }
+  
+}
+
+class RegisterExpenses extends StatelessWidget { 
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      child: Center(
+        child: Text(
+          "Tela para cadastrar as despesas do usuario",
+          textDirection: TextDirection.ltr,
+        ),),
+    );
+    throw UnimplementedError();
+  }
+  
+}
+
+class UpdateBalance extends StatelessWidget { 
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      child: Center(
+        child: Text(
+          "Tela para alterar o saldo",
+          textDirection: TextDirection.ltr,
+        ),),
+    );
+    throw UnimplementedError();
+  }
+  
+}
