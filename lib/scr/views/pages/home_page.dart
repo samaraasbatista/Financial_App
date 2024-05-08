@@ -43,18 +43,35 @@ class HomePageState extends State<HomePage> {
               child: ListView.builder(
                 itemCount: _expenses.length,
                 itemBuilder: (context, index) {
-                  return Card(
-                    margin: const EdgeInsets.all(10),
-                    color: Colors.amber.shade100,
-                    child: ListTile(
-                      leading: Text(_expenses[index]["id"].toString()),
-                      title: Text(_expenses[index]["nome"]),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("Valor: ${_expenses[index]["valor"]}"),
-                          Text("Data: ${_expenses[index]["data"]}"),
-                        ],
+                  return Dismissible(
+                    key: Key(_expenses[index]["id"].toString()),
+                    onDismissed: (direction) {
+                      _deleteExpense(index);
+                    },
+                    background: Container(
+                      color: Colors.red,
+                      alignment: Alignment.centerRight,
+                      child: Padding(
+                        padding: EdgeInsets.only(right: 20.0),
+                        child: Icon(
+                          Icons.delete,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    child: Card(
+                      margin: const EdgeInsets.all(10),
+                      color: Color.fromARGB(255, 238, 238, 238),
+                      child: ListTile(
+                        leading: Text(_expenses[index]["id"].toString()),
+                        title: Text(_expenses[index]["nome"]),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("Valor: ${_expenses[index]["valor"]}"),
+                            Text("Data: ${_expenses[index]["data"]}"),
+                          ],
+                        ),
                       ),
                     ),
                   );
@@ -83,6 +100,12 @@ class HomePageState extends State<HomePage> {
         },
       ),
     );
+  }
+
+  void _deleteExpense(int index) {
+    setState(() {
+      _expenses.removeAt(index);
+    });
   }
 }
 

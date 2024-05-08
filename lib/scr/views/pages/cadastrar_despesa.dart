@@ -12,8 +12,7 @@ class CadastroPage extends StatefulWidget {
 }
 
 class _CadastrarDispesa extends State<CadastroPage> {
-  List _items = [];
-
+  static List _items = [];
   TextEditingController _nomeController = TextEditingController();
   TextEditingController _valorController = TextEditingController();
   TextEditingController _dataController = TextEditingController();
@@ -51,6 +50,7 @@ class _CadastrarDispesa extends State<CadastroPage> {
                   decoration: InputDecoration(labelText: 'Nome'),
                 ),
                 TextFormField(
+                  keyboardType: TextInputType.number,
                   controller: _valorController,
                   decoration: InputDecoration(labelText: 'Valor'),
                 ),
@@ -64,14 +64,14 @@ class _CadastrarDispesa extends State<CadastroPage> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    // Criando um mapa com os dados da despesa cadastrada
+                    
                     Map<String, dynamic> newExpense = {
                       "id": _items.length + 1,
                       "nome": _nomeController.text,
-                      "valor": _valorController.text,
+                      "valor": double.parse(_valorController.text),
                       "data": _dataController.text,
                     };
-
+                    _items.add(newExpense);
                     // Retornando os dados da despesa para a tela anterior
                     Navigator.pop(context, newExpense);
                   },
