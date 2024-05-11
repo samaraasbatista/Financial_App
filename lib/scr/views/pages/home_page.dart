@@ -8,103 +8,118 @@ class HomePage extends StatefulWidget {
 }
 
 class HomePageState extends State<HomePage> {
-  int counter = 0;
-  List _expenses = [];
+  List<Map<String, dynamic>> _expenses = [];
+  List<Map<String, dynamic>> _futureExpenses = [];
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Row(
+            children: [
+              Image.asset('assets/images/perfil.png', width: 70, height: 70),
+              Text(
+                'Samara Alves',
+                style: TextStyle(fontSize: 18, color: Colors.white),
+              )
+            ],
+          ),
+          backgroundColor: Colors.black,
+          actions: [
+            CustomSwitcher(),
+          ],
+          bottom: TabBar(
+            tabs: [
+              Tab(text: 'Home'),
+              Tab(text: 'Futuros'),
+            ],
+          ),
+        ),
+        body: TabBarView(
           children: [
-            Image.asset('assets/images/perfil.png', width: 70, height: 70),
-            Text(
-              'Samara Alves',
-              style: TextStyle(fontSize: 18, color: Colors.white),
-            )
+            _buildExpenseList(_expenses),
+            _buildExpenseList(_futureExpenses),
           ],
         ),
-        backgroundColor: Colors.black,
-        actions: [
-          CustomSwitcher(),
-        ],
-      ),
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Conteúdo removido para simplificar
+        floatingActionButton: FloatingActionButton(
+          child: Icon(Icons.add),
+          backgroundColor: Colors.red,
+          onPressed: () async {
+            
+            final Map<String, dynamic>? newExpense = await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => CadastroPage()),
+            );
 
-            // Lista de despesas
-            Expanded(
-              child: ListView.builder(
-                itemCount: _expenses.length,
-                itemBuilder: (context, index) {
-                  return Dismissible(
-                    key: Key(_expenses[index]["id"].toString()),
-                    onDismissed: (direction) {
-                      _deleteExpense(index);
-                    },
-                    background: Container(
-                      color: Colors.red,
-                      alignment: Alignment.centerRight,
-                      child: Padding(
-                        padding: EdgeInsets.only(right: 20.0),
-                        child: Icon(
-                          Icons.delete,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                    child: Card(
-                      margin: const EdgeInsets.all(10),
-                      color: Color.fromARGB(255, 238, 238, 238),
-                      child: ListTile(
-                        leading: Text(_expenses[index]["id"].toString()),
-                        title: Text(_expenses[index]["nome"]),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("Valor: ${_expenses[index]["valor"]}"),
-                            Text("Data: ${_expenses[index]["data"]}"),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
+            if (newExpense != null) {
+              if (newExpense['status'] == 1) {
+                setState(() {
+                  _futureExpenses.add(newExpense['data']);
+                  print(_futureExpenses);
+                });
+              } else {
+                setState(() {
+                  _expenses.add(newExpense['data']);
+                  print(newExpense);
+                });
+              }
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExpenseList(List<Map<String, dynamic>> expenses) {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      padding: EdgeInsets.all(16.0),
+      child: ListView.builder(
+        itemCount: expenses.length,
+        itemBuilder: (context, index) {
+          return Dismissible(
+            key: Key(expenses[index]["id"].toString()),
+            onDismissed: (direction) {
+              _deleteExpense(index, expenses);
+            },
+            background: Container(
+              color: Colors.red,
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: EdgeInsets.only(right: 20.0),
+                child: Icon(
+                  Icons.delete,
+                  color: Colors.white,
+                ),
               ),
             ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.add),
-        backgroundColor: Colors.red,
-        onPressed: () async {
-          // Abrindo a tela de cadastro e aguardando os dados retornados
-          final Map<String, dynamic>? newExpense = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => CadastroPage()),
+            child: Card(
+              margin: const EdgeInsets.all(10),
+              color: Color.fromARGB(255, 238, 238, 238),
+              child: ListTile(
+                leading: Text(expenses[index]["id"].toString()),
+                title: Text(expenses[index]["nome"]),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("Valor: ${expenses[index]["valor"]}"),
+                    Text("Data: ${expenses[index]["data"]}"),
+                  ],
+                ),
+              ),
+            ),
           );
-
-          // Se novos dados foram retornados, adicioná-los à lista de despesas
-          if (newExpense != null) {
-            setState(() {
-              _expenses.add(newExpense);
-            });
-          }
         },
       ),
     );
   }
 
-  void _deleteExpense(int index) {
+  void _deleteExpense(int index, List<Map<String, dynamic>> expenses) {
     setState(() {
-      _expenses.removeAt(index);
+      expenses.removeAt(index);
     });
   }
 }

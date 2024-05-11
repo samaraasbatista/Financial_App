@@ -51,6 +51,9 @@ class _CadastrarDispesa extends State<CadastroPage> {
                 ),
                 TextFormField(
                   keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.deny(RegExp(r'[ ,\-]')), // Bloqueia espaços, traços e vírgulas
+                  ],
                   controller: _valorController,
                   decoration: InputDecoration(labelText: 'Valor'),
                 ),
@@ -64,16 +67,32 @@ class _CadastrarDispesa extends State<CadastroPage> {
                 ),
                 ElevatedButton(
                   onPressed: () {
+                    DateTime now = DateTime.now();
+                    DateTime selectedDate = DateFormat('dd/MM/yyyy').parse(_dataController.text);
                     
-                    Map<String, dynamic> newExpense = {
-                      "id": _items.length + 1,
-                      "nome": _nomeController.text,
-                      "valor": double.parse(_valorController.text),
-                      "data": _dataController.text,
-                    };
-                    _items.add(newExpense);
-                    // Retornando os dados da despesa para a tela anterior
-                    Navigator.pop(context, newExpense);
+                    
+                    if (selectedDate.isAfter(now)) {
+                      
+                      Map<String, dynamic> newFutureExpense = {
+                        "id": _items.length + 1,
+                        "nome": _nomeController.text,
+                        "valor": double.parse(_valorController.text),
+                        "data": _dataController.text,
+                      };
+                      
+                      Navigator.pop(context, {"data": newFutureExpense, "status": 1});
+                    } else {
+                      
+                      Map<String, dynamic> newExpense = {
+                        "id": _items.length + 1,
+                        "nome": _nomeController.text,
+                        "valor": double.parse(_valorController.text),
+                        "data": _dataController.text,
+                      };
+                      _items.add(newExpense);
+                      
+                      Navigator.pop(context, {"data": newExpense, "status": 0});
+                    }
                   },
                   child: Text('Add Item'),
                 ),

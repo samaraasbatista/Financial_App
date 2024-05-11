@@ -59,7 +59,7 @@ class _LoginPageState extends State<LoginPage> {
                               backgroundColor: Colors.greenAccent,
                               textStyle: TextStyle(color: Colors.black)),
                           onPressed: () {
-                            if (email == 'samara@gmail.com' && password == '123') {
+                            if (email == '1' && password == '1') {
                               Navigator.of(context)
                                   .pushReplacementNamed('/home');
                             } else {}
