@@ -1,15 +1,22 @@
-class Despesa {
-  final String nome;
-  final String valor;
-  final String data;
+class Expense {
+  int? id;
+  String nome;
+  double valor;
+  String data;
 
-  Despesa({required this.nome, required this.valor, required this.data});
+  Expense({
+    this.id,
+    required this.nome,
+    required this.valor,
+    required this.data,
+  });
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
+      'id': id,
       'nome': nome,
       'valor': valor,
-      'data': data
+      'data': data,
     };
   }
 }

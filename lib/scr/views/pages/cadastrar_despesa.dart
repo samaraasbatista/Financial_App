@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class CadastroPage extends StatefulWidget {
   const CadastroPage({Key? key}) : super(key: key);
@@ -28,6 +28,12 @@ class _CadastrarDispesa extends State<CadastroPage> {
       setState(() {
         _dataController.text = DateFormat('dd/MM/yyyy').format(picked);
       });
+  }
+
+  Future<void> _salvarDespesa(Map<String, dynamic> despesa) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    _items.add(despesa);
+    await prefs.setString('despesas', jsonEncode(_items));
   }
 
   @override
@@ -66,31 +72,21 @@ class _CadastrarDispesa extends State<CadastroPage> {
                   },
                 ),
                 ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     DateTime now = DateTime.now();
                     DateTime selectedDate = DateFormat('dd/MM/yyyy').parse(_dataController.text);
-                    
-                    
+
+                    Map<String, dynamic> newExpense = {
+                      "id": _items.length + 1,
+                      "nome": _nomeController.text,
+                      "valor": double.parse(_valorController.text),
+                      "data": _dataController.text,
+                    };
+
                     if (selectedDate.isAfter(now)) {
-                      
-                      Map<String, dynamic> newFutureExpense = {
-                        "id": _items.length + 1,
-                        "nome": _nomeController.text,
-                        "valor": double.parse(_valorController.text),
-                        "data": _dataController.text,
-                      };
-                      
-                      Navigator.pop(context, {"data": newFutureExpense, "status": 1});
+                      Navigator.pop(context, {"data": newExpense, "status": 1});
                     } else {
-                      
-                      Map<String, dynamic> newExpense = {
-                        "id": _items.length + 1,
-                        "nome": _nomeController.text,
-                        "valor": double.parse(_valorController.text),
-                        "data": _dataController.text,
-                      };
-                      _items.add(newExpense);
-                      
+                      await _salvarDespesa(newExpense);
                       Navigator.pop(context, {"data": newExpense, "status": 0});
                     }
                   },

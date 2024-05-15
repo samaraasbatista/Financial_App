@@ -1,5 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/scr/controllers/app_controller.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_application_1/scr/views/pages/cadastrar_despesa.dart';
 
 class HomePage extends StatefulWidget {
@@ -28,7 +31,6 @@ class HomePageState extends State<HomePage> {
           ),
           backgroundColor: Colors.black,
           actions: [
-            CustomSwitcher(),
           ],
           bottom: TabBar(
             tabs: [
@@ -47,7 +49,6 @@ class HomePageState extends State<HomePage> {
           child: Icon(Icons.add),
           backgroundColor: Colors.red,
           onPressed: () async {
-            
             final Map<String, dynamic>? newExpense = await Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => CadastroPage()),
@@ -57,12 +58,12 @@ class HomePageState extends State<HomePage> {
               if (newExpense['status'] == 1) {
                 setState(() {
                   _futureExpenses.add(newExpense['data']);
-                  print(_futureExpenses);
+                  _saveExpenses(_futureExpenses, 'futureExpenses');
                 });
               } else {
                 setState(() {
                   _expenses.add(newExpense['data']);
-                  print(newExpense);
+                  _saveExpenses(_expenses, 'expenses');
                 });
               }
             }
@@ -105,7 +106,7 @@ class HomePageState extends State<HomePage> {
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Valor: ${expenses[index]["valor"]}"),
+                    Text("Valor:R ${expenses[index]["valor"]}"),
                     Text("Data: ${expenses[index]["data"]}"),
                   ],
                 ),
@@ -117,21 +118,48 @@ class HomePageState extends State<HomePage> {
     );
   }
 
-  void _deleteExpense(int index, List<Map<String, dynamic>> expenses) {
+  void _deleteExpense(int index, List<Map<String, dynamic>> expenses) async {
     setState(() {
-      expenses.removeAt(index);
+      var deletedExpense = expenses.removeAt(index);
+      // Salva a lista atualizada no SharedPreferences após remover a despesa
+      if (_expenses.contains(deletedExpense)) {
+        _saveExpenses(_expenses, 'expenses');
+      } else if (_futureExpenses.contains(deletedExpense)) {
+        _saveExpenses(_futureExpenses, 'futureExpenses');
+      }
     });
+    // Remover a despesa também do SharedPreferences
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('expenses', jsonEncode(_expenses));
+    await prefs.setString('futureExpenses', jsonEncode(_futureExpenses));
   }
-}
 
-class CustomSwitcher extends StatelessWidget {
+  Future<void> _saveExpenses(List<Map<String, dynamic>> expenses, String key) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString(key, jsonEncode(expenses));
+  }
+
+  Future<void> _loadExpenses(String key) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? expensesString = prefs.getString(key);
+    print("expensesString ${expensesString}");
+    if (expensesString != null) {
+      List<Map<String, dynamic>> expenses = jsonDecode(expensesString).cast<Map<String, dynamic>>();
+      print("expenses: ${expenses}");
+      setState(() {
+        if (key == 'expenses') {
+          _expenses = expenses;
+        } else {
+          _futureExpenses = expenses;
+        }
+      });
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
-    return Switch(
-      value: AppController.instance.isDarkTheme,
-      onChanged: (value) {
-        AppController.instance.changeTheme();
-      },
-    );
+  void initState() {
+    super.initState();
+    _loadExpenses('expenses');
+    _loadExpenses('futureExpenses');
   }
 }
