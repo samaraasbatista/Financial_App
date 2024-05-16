@@ -30,8 +30,7 @@ class HomePageState extends State<HomePage> {
             ],
           ),
           backgroundColor: Colors.black,
-          actions: [
-          ],
+          actions: [],
           bottom: TabBar(
             tabs: [
               Tab(text: 'Home'),
@@ -63,7 +62,7 @@ class HomePageState extends State<HomePage> {
               } else {
                 setState(() {
                   _expenses.add(newExpense['data']);
-                  _saveExpenses(_expenses, 'expenses');
+                  _saveExpenses(_expenses, 'futureExpenses');
                 });
               }
             }
@@ -120,13 +119,7 @@ class HomePageState extends State<HomePage> {
 
   void _deleteExpense(int index, List<Map<String, dynamic>> expenses) async {
     setState(() {
-      var deletedExpense = expenses.removeAt(index);
-      // Salva a lista atualizada no SharedPreferences após remover a despesa
-      if (_expenses.contains(deletedExpense)) {
-        _saveExpenses(_expenses, 'expenses');
-      } else if (_futureExpenses.contains(deletedExpense)) {
-        _saveExpenses(_futureExpenses, 'futureExpenses');
-      }
+      expenses.removeAt(index);
     });
     // Remover a despesa também do SharedPreferences
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -149,8 +142,10 @@ class HomePageState extends State<HomePage> {
       setState(() {
         if (key == 'expenses') {
           _expenses = expenses;
+          print("entrou em expense");
         } else {
           _futureExpenses = expenses;
+          print("entrou em futureexpense");
         }
       });
     }
