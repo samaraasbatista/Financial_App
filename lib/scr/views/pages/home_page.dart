@@ -62,7 +62,7 @@ class HomePageState extends State<HomePage> {
               } else {
                 setState(() {
                   _expenses.add(newExpense['data']);
-                  _saveExpenses(_expenses, 'futureExpenses');
+                  _saveExpenses(_expenses, 'expenses');
                 });
               }
             }
