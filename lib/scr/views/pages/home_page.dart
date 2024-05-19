@@ -259,7 +259,6 @@ class HomePageState extends State<HomePage> {
                     margin: const EdgeInsets.all(10),
                     color: Color.fromARGB(255, 238, 238, 238),
                     child: ListTile(
-                      leading: Text(filteredExpenses[index]["id"].toString()),
                       title: Text(filteredExpenses[index]["nome"]),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
