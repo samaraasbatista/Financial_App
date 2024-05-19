@@ -105,8 +105,9 @@ class HomePageState extends State<HomePage> {
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Valor:R ${expenses[index]["valor"]}"),
+                    Text("Valor: R\$ ${expenses[index]["valor"]}"),
                     Text("Data: ${expenses[index]["data"]}"),
+                    Text("Tipo: ${expenses[index]["tipo"]}"),
                   ],
                 ),
               ),
