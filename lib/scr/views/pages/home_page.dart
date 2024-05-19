@@ -101,95 +101,153 @@ class HomePageState extends State<HomePage> {
       child: Column(
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(5.0),
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey),
+                borderRadius: BorderRadius.circular(5.0),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _selectedType,
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      _selectedType = newValue!;
+                    });
+                  },
+                  items: <String>[
+                    'Todos', 'Saúde e Bem-Estar', 'Streamings', 'Lazer',
+                    'Gasolina', 'Comida', 'Roupa', 'Transporte'
+                  ].map<DropdownMenuItem<String>>((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
                 ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: _selectedType,
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        _selectedType = newValue!;
-                      });
-                    },
-                    items: <String>['Todos', 'Saúde e Bem-Estar', 'Streamings', 'Lazer', 'Gasolina', 'Comida', 'Roupa', 'Transporte']
-                        .map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
+              ),
+            ),
+            SizedBox(width: 10),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey),
+                borderRadius: BorderRadius.circular(5.0),
+              ),
+              child: IconButton(
+                icon: Icon(Icons.date_range),
+                onPressed: () async {
+                  showModalBottomSheet(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return Container(
+                        height: 200.0,
+                        child: Column(
+                          children: [
+                            ListTile(
+                              leading: Icon(Icons.date_range),
+                              title: Text("Desde o início até agora"),
+                              onTap: () async {
+                                setState(() {
+                                  _selectedDateRange = DateTimeRange(
+                                    start: DateTime(2000), // ou outra data que você considere apropriada
+                                    end: DateTime.now(),
+                                  );
+                                  _selectedDate = null; // Limpa a seleção de data única
+                                });
+                                Navigator.pop(context); // Fecha o modal
+                              },
+                            ),
+                            ListTile(
+                              leading: Icon(Icons.date_range),
+                              title: Text("Selecionar intervalo de datas"),
+                              onTap: () async {
+                                DateTimeRange? picked = await showDateRangePicker(
+                                  context: context,
+                                  firstDate: DateTime(2000),
+                                  lastDate: DateTime(2101),
+                                );
+                                if (picked != null) {
+                                  setState(() {
+                                    _selectedDateRange = picked;
+                                    _selectedDate = null; // Limpa a seleção de data única
+                                  });
+                                }
+                                Navigator.pop(context); // Fecha o modal
+                              },
+                            ),
+                          ],
+                        ),
                       );
-                    }).toList(),
+                    },
+                  );
+                },
+              ),
+            ),
+            SizedBox(width: 10),
+            PopupMenuButton<String>(
+              icon: Icon(Icons.sort),
+              itemBuilder: (BuildContext context) => [
+                PopupMenuItem<String>(
+                  value: 'Valor (Maior para Menor)',
+                  child: ListTile(
+                    title: Text('Valor (Maior para Menor)'),
+                    onTap: () {
+                      setState(() {
+                        _expenses.sort((a, b) => b['valor'].compareTo(a['valor']));
+                        _futureExpenses.sort((a, b) => b['valor'].compareTo(a['valor']));
+                      });
+                      Navigator.pop(context);
+                    },
                   ),
                 ),
-              ),
-              SizedBox(width: 10),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(5.0),
-                ),
-                child: Row(
-                  children: [
-                    IconButton(
-                    icon: Icon(Icons.date_range),
-                    onPressed: () async {
-                      showModalBottomSheet(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return Container(
-                            height: 200.0,
-                            child: Column(
-                              children: [
-                                ListTile(
-                                  leading: Icon(Icons.date_range),
-                                  title: Text("Desde o início até agora"),
-                                  onTap: () async {
-                                    setState(() {
-                                      _selectedDateRange = DateTimeRange(
-                                        start: DateTime(2000), // ou outra data que você considere apropriada
-                                        end: DateTime.now(),
-                                      );
-                                      _selectedDate = null; // Limpa a seleção de data única
-                                    });
-                                    Navigator.pop(context); // Fecha o modal
-                                  },
-                                ),
-                                ListTile(
-                                  leading: Icon(Icons.date_range),
-                                  title: Text("Selecionar intervalo de datas"),
-                                  onTap: () async {
-                                    DateTimeRange? picked = await showDateRangePicker(
-                                      context: context,
-                                      firstDate: DateTime(2000),
-                                      lastDate: DateTime(2101),
-                                    );
-                                    if (picked != null) {
-                                      setState(() {
-                                        _selectedDateRange = picked;
-                                        _selectedDate = null; // Limpa a seleção de data única
-                                      });
-                                    }
-                                    Navigator.pop(context); // Fecha o modal
-                                  },
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      );
+                PopupMenuItem<String>(
+                  value: 'Valor (Menor para Maior)',
+                  child: ListTile(
+                    title: Text('Valor (Menor para Maior)'),
+                    onTap: () {
+                      setState(() {
+                        _expenses.sort((a, b) => a['valor'].compareTo(b['valor']));
+                        _futureExpenses.sort((a, b) => a['valor'].compareTo(b['valor']));
+                      });
+                      Navigator.pop(context);
                     },
-),
-                  ],
+                  ),
                 ),
-              ),
-            ],
-          ),
+                PopupMenuItem<String>(
+                  value: 'Data (Mais recente para Mais antiga)',
+                  child: ListTile(
+                    title: Text('Data (Mais recente para Mais antiga)'),
+                    onTap: () {
+                      setState(() {
+                        _expenses.sort((a, b) => b['data'].compareTo(a['data']));
+                        _futureExpenses.sort((a, b) => b['data'].compareTo(a['data']));
+                      });
+                      Navigator.pop(context);
+                    },
+                  ),
+                ),
+                PopupMenuItem<String>(
+                  value: 'Data (Mais antiga para Mais recente)',
+                  child: ListTile(
+                    title: Text('Data (Mais antiga para Mais recente)'),
+                    onTap: () {
+                      setState(() {
+                        _expenses.sort((a, b) => a['data'].compareTo(b['data']));
+                        _futureExpenses.sort((a, b) => a['data'].compareTo(b['data']));
+                      });
+                      Navigator.pop(context);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+
+
           SizedBox(height: 16.0), // Espaçamento entre os filtros e a lista
           Expanded(
             child: ListView.builder(
