@@ -16,6 +16,14 @@ class HomePageState extends State<HomePage> {
   String _selectedType = 'Todos'; // Variável para armazenar o tipo selecionado
   DateTime? _selectedDate; // Variável para armazenar a data selecionada
   DateTimeRange? _selectedDateRange; // Variável para armazenar o intervalo de datas selecionado
+  double _balance = 1000.0; // Variável para armazenar o saldo inicial
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExpenses('expenses');
+    _loadExpenses('futureExpenses');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,10 +49,33 @@ class HomePageState extends State<HomePage> {
             ],
           ),
         ),
-        body: TabBarView(
+        body: Column(
           children: [
-            _buildExpenseList(_expenses),
-            _buildExpenseList(_futureExpenses),
+            Container(
+              padding: EdgeInsets.all(16.0),
+              color: Colors.black,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Saldo:',
+                    style: TextStyle(fontSize: 18, color: Colors.white),
+                  ),
+                  Text(
+                    'R\$ ${_balance.toStringAsFixed(2)}',
+                    style: TextStyle(fontSize: 18, color: Colors.white),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  _buildExpenseList(_expenses),
+                  _buildExpenseList(_futureExpenses),
+                ],
+              ),
+            ),
           ],
         ),
         floatingActionButton: FloatingActionButton(
@@ -66,6 +97,7 @@ class HomePageState extends State<HomePage> {
                 setState(() {
                   _expenses.add(newExpense['data']);
                   _saveExpenses(_expenses, 'expenses');
+                  _updateBalance();
                 });
               }
             }
@@ -295,13 +327,14 @@ class HomePageState extends State<HomePage> {
   }
 
   String _formatDate(String date) {
-    // Convert date from 'dd/MM/yyyy' to 'yyyy-MM-dd' format
+    // Converte a data de 'dd/MM/yyyy' para o formato 'yyyy-MM-dd'
     DateTime parsedDate = DateFormat('dd/MM/yyyy').parse(date);
     return DateFormat('yyyy-MM-dd').format(parsedDate);
   }
 
   void _deleteExpense(int index, List<Map<String, dynamic>> expenses) async {
     setState(() {
+      _balance += expenses[index]['valor']; // Atualiza o saldo ao apagar a despesa
       expenses.removeAt(index);
     });
     // Remover a despesa também do SharedPreferences
@@ -313,31 +346,29 @@ class HomePageState extends State<HomePage> {
   Future<void> _saveExpenses(List<Map<String, dynamic>> expenses, String key) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(key, jsonEncode(expenses));
+    _updateBalance();
   }
 
   Future<void> _loadExpenses(String key) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? expensesString = prefs.getString(key);
-    print("expensesString ${expensesString}");
     if (expensesString != null) {
       List<Map<String, dynamic>> expenses = jsonDecode(expensesString).cast<Map<String, dynamic>>();
-      print("expenses: ${expenses}");
       setState(() {
         if (key == 'expenses') {
           _expenses = expenses;
-          print("entrou em expense");
         } else {
           _futureExpenses = expenses;
-          print("entrou em futureexpense");
         }
       });
+      _updateBalance();
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _loadExpenses('expenses');
-    _loadExpenses('futureExpenses');
+  void _updateBalance() {
+    double totalExpenses = _expenses.fold(0, (sum, item) => sum + item['valor']);
+    setState(() {
+      _balance = _balance - totalExpenses; // Saldo inicial menos as despesas
+    });
   }
 }
