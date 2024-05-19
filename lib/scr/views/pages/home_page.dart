@@ -1,15 +1,17 @@
+import 'package:financial_app/scr/controllers/app_controller.dart';
+import 'package:financial_app/scr/views/pages/cadastrar_despesa.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/scr/controllers/app_controller.dart';
-import 'package:flutter_application_1/scr/views/pages/cadastrar_despesa.dart';
 
 class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
   @override
   State<HomePage> createState() => HomePageState();
 }
 
 class HomePageState extends State<HomePage> {
-  List<Map<String, dynamic>> _expenses = [];
-  List<Map<String, dynamic>> _futureExpenses = [];
+  final List<Map<String, dynamic>> _expenses = [];
+  final List<Map<String, dynamic>> _futureExpenses = [];
 
   @override
   Widget build(BuildContext context) {
@@ -20,17 +22,17 @@ class HomePageState extends State<HomePage> {
           title: Row(
             children: [
               Image.asset('assets/images/perfil.png', width: 70, height: 70),
-              Text(
+              const Text(
                 'Samara Alves',
                 style: TextStyle(fontSize: 18, color: Colors.white),
               )
             ],
           ),
           backgroundColor: Colors.black,
-          actions: [
+          actions: const [
             CustomSwitcher(),
           ],
-          bottom: TabBar(
+          bottom: const TabBar(
             tabs: [
               Tab(text: 'Home'),
               Tab(text: 'Futuros'),
@@ -44,13 +46,12 @@ class HomePageState extends State<HomePage> {
           ],
         ),
         floatingActionButton: FloatingActionButton(
-          child: Icon(Icons.add),
           backgroundColor: Colors.red,
           onPressed: () async {
             
             final Map<String, dynamic>? newExpense = await Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => CadastroPage()),
+              MaterialPageRoute(builder: (context) => const CadastroPage()),
             );
 
             if (newExpense != null) {
@@ -67,6 +68,7 @@ class HomePageState extends State<HomePage> {
               }
             }
           },
+          child: const Icon(Icons.add),
         ),
       ),
     );
@@ -76,7 +78,7 @@ class HomePageState extends State<HomePage> {
     return Container(
       width: double.infinity,
       height: double.infinity,
-      padding: EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(16.0),
       child: ListView.builder(
         itemCount: expenses.length,
         itemBuilder: (context, index) {
@@ -88,7 +90,7 @@ class HomePageState extends State<HomePage> {
             background: Container(
               color: Colors.red,
               alignment: Alignment.centerRight,
-              child: Padding(
+              child: const Padding(
                 padding: EdgeInsets.only(right: 20.0),
                 child: Icon(
                   Icons.delete,
@@ -98,7 +100,7 @@ class HomePageState extends State<HomePage> {
             ),
             child: Card(
               margin: const EdgeInsets.all(10),
-              color: Color.fromARGB(255, 238, 238, 238),
+              color: const Color.fromARGB(255, 238, 238, 238),
               child: ListTile(
                 leading: Text(expenses[index]["id"].toString()),
                 title: Text(expenses[index]["nome"]),
@@ -125,6 +127,8 @@ class HomePageState extends State<HomePage> {
 }
 
 class CustomSwitcher extends StatelessWidget {
+  const CustomSwitcher({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Switch(

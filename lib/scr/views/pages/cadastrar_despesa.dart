@@ -1,21 +1,19 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class CadastroPage extends StatefulWidget {
-  const CadastroPage({Key? key}) : super(key: key);
+  const CadastroPage({super.key});
 
   @override
   State<CadastroPage> createState() => _CadastrarDispesa();
 }
 
 class _CadastrarDispesa extends State<CadastroPage> {
-  static List _items = [];
-  TextEditingController _nomeController = TextEditingController();
-  TextEditingController _valorController = TextEditingController();
-  TextEditingController _dataController = TextEditingController();
+  static final List _items = [];
+  final TextEditingController _nomeController = TextEditingController();
+  final TextEditingController _valorController = TextEditingController();
+  final TextEditingController _dataController = TextEditingController();
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -24,10 +22,11 @@ class _CadastrarDispesa extends State<CadastroPage> {
       firstDate: DateTime(2015, 8),
       lastDate: DateTime(2101),
     );
-    if (picked != null)
+    if (picked != null) {
       setState(() {
         _dataController.text = DateFormat('dd/MM/yyyy').format(picked);
       });
+    }
   }
 
   @override
@@ -47,7 +46,7 @@ class _CadastrarDispesa extends State<CadastroPage> {
               children: [
                 TextFormField(
                   controller: _nomeController,
-                  decoration: InputDecoration(labelText: 'Nome'),
+                  decoration: const InputDecoration(labelText: 'Nome'),
                 ),
                 TextFormField(
                   keyboardType: TextInputType.number,
@@ -55,11 +54,11 @@ class _CadastrarDispesa extends State<CadastroPage> {
                     FilteringTextInputFormatter.deny(RegExp(r'[ ,\-]')), // Bloqueia espaços, traços e vírgulas
                   ],
                   controller: _valorController,
-                  decoration: InputDecoration(labelText: 'Valor'),
+                  decoration: const InputDecoration(labelText: 'Valor'),
                 ),
                 TextFormField(
                   controller: _dataController,
-                  decoration: InputDecoration(labelText: 'Data'),
+                  decoration: const InputDecoration(labelText: 'Data'),
                   readOnly: true,
                   onTap: () {
                     _selectDate(context);
@@ -94,7 +93,7 @@ class _CadastrarDispesa extends State<CadastroPage> {
                       Navigator.pop(context, {"data": newExpense, "status": 0});
                     }
                   },
-                  child: Text('Add Item'),
+                  child: const Text('Add Item'),
                 ),
               ],
             ),
