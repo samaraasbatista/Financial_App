@@ -1,20 +1,19 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 class CadastroPage extends StatefulWidget {
-  const CadastroPage({Key? key}) : super(key: key);
+  const CadastroPage({super.key});
 
   @override
   State<CadastroPage> createState() => _CadastrarDispesa();
 }
 
 class _CadastrarDispesa extends State<CadastroPage> {
-  static List<Map<String, dynamic>> _items = [];
-  TextEditingController _nomeController = TextEditingController();
-  TextEditingController _valorController = TextEditingController();
-  TextEditingController _dataController = TextEditingController();
+  static final List<Map<String, dynamic>> _items = [];
+  final TextEditingController _nomeController = TextEditingController();
+  final TextEditingController _valorController = TextEditingController();
+  final TextEditingController _dataController = TextEditingController();
   String _tipoDespesa = "Saúde e Bem-Estar"; // Valor padrão
 
   Future<void> _selectDate(BuildContext context) async {
@@ -24,10 +23,11 @@ class _CadastrarDispesa extends State<CadastroPage> {
       firstDate: DateTime(2015, 8),
       lastDate: DateTime(2101),
     );
-    if (picked != null)
+    if (picked != null) {
       setState(() {
         _dataController.text = DateFormat('dd/MM/yyyy').format(picked);
       });
+    }
   }
 
   @override
@@ -47,28 +47,28 @@ class _CadastrarDispesa extends State<CadastroPage> {
             children: [
               TextFormField(
                 controller: _nomeController,
-                decoration: InputDecoration(labelText: 'Nome'),
+                decoration: const InputDecoration(labelText: 'Nome'),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               TextFormField(
                 keyboardType: TextInputType.number,
                 inputFormatters: [
                   FilteringTextInputFormatter.deny(RegExp(r'[ ,\-]')), // Bloqueia espaços, traços e vírgulas
                 ],
                 controller: _valorController,
-                decoration: InputDecoration(labelText: 'Valor'),
+                decoration: const InputDecoration(labelText: 'Valor'),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               TextFormField(
                 controller: _dataController,
-                decoration: InputDecoration(labelText: 'Data'),
+                decoration: const InputDecoration(labelText: 'Data'),
                 readOnly: true,
                 onTap: () {
                   _selectDate(context);
                 },
               ),
-              SizedBox(height: 20),
-              Text(
+              const SizedBox(height: 20),
+              const Text(
                 'Tipo',
                 style: TextStyle(fontSize: 16),
               ),
@@ -94,7 +94,7 @@ class _CadastrarDispesa extends State<CadastroPage> {
                   );
                 }).toList(),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
                   DateTime now = DateTime.now();
@@ -123,7 +123,7 @@ class _CadastrarDispesa extends State<CadastroPage> {
                     Navigator.pop(context, {"data": newExpense, "status": 0});
                   }
                 },
-                child: Text('Add Item'),
+                child: const Text('Add Item'),
               ),
             ],
           ),
