@@ -12,7 +12,6 @@ class HomePage extends StatefulWidget {
 
 class HomePageState extends State<HomePage> {
   List<Map<String, dynamic>> _expenses = [];
-  List<Map<String, dynamic>> _futureExpenses = [];
   String _selectedType = 'Todos'; // Variável para armazenar o tipo selecionado
   DateTime? _selectedDate; // Variável para armazenar a data selecionada
   DateTimeRange? _selectedDateRange; // Variável para armazenar o intervalo de datas selecionado
@@ -43,8 +42,8 @@ class HomePageState extends State<HomePage> {
         ),
         body: TabBarView(
           children: [
-            _buildExpenseList(_expenses),
-            _buildExpenseList(_futureExpenses),
+            _buildExpenseList(_getHomeExpenses()),
+            _buildExpenseList(_getFutureExpenses()),
           ],
         ),
         floatingActionButton: FloatingActionButton(
@@ -57,17 +56,10 @@ class HomePageState extends State<HomePage> {
             );
 
             if (newExpense != null) {
-              if (newExpense['status'] == 1) {
-                setState(() {
-                  _futureExpenses.add(newExpense['data']);
-                  _saveExpenses(_futureExpenses, 'futureExpenses');
-                });
-              } else {
-                setState(() {
-                  _expenses.add(newExpense['data']);
-                  _saveExpenses(_expenses, 'expenses');
-                });
-              }
+              setState(() {
+                _expenses.add(newExpense);
+                _saveExpenses();
+              });
             }
           },
         ),
@@ -101,153 +93,147 @@ class HomePageState extends State<HomePage> {
       child: Column(
         children: [
           Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey),
-                borderRadius: BorderRadius.circular(5.0),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _selectedType,
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      _selectedType = newValue!;
-                    });
-                  },
-                  items: <String>[
-                    'Todos', 'Saúde e Bem-Estar', 'Streamings', 'Lazer',
-                    'Gasolina', 'Comida', 'Roupa', 'Transporte'
-                  ].map<DropdownMenuItem<String>>((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(5.0),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: _selectedType,
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        _selectedType = newValue!;
+                      });
+                    },
+                    items: <String>[
+                      'Todos', 'Saúde e Bem-Estar', 'Streamings', 'Lazer',
+                      'Gasolina', 'Comida', 'Roupa', 'Transporte'
+                    ].map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                  ),
                 ),
               ),
-            ),
-            SizedBox(width: 10),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey),
-                borderRadius: BorderRadius.circular(5.0),
-              ),
-              child: IconButton(
-                icon: Icon(Icons.date_range),
-                onPressed: () async {
-                  showModalBottomSheet(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return Container(
-                        height: 200.0,
-                        child: Column(
-                          children: [
-                            ListTile(
-                              leading: Icon(Icons.date_range),
-                              title: Text("Desde o início até agora"),
-                              onTap: () async {
-                                setState(() {
-                                  _selectedDateRange = DateTimeRange(
-                                    start: DateTime(2000), // ou outra data que você considere apropriada
-                                    end: DateTime.now(),
-                                  );
-                                  _selectedDate = null; // Limpa a seleção de data única
-                                });
-                                Navigator.pop(context); // Fecha o modal
-                              },
-                            ),
-                            ListTile(
-                              leading: Icon(Icons.date_range),
-                              title: Text("Selecionar intervalo de datas"),
-                              onTap: () async {
-                                DateTimeRange? picked = await showDateRangePicker(
-                                  context: context,
-                                  firstDate: DateTime(2000),
-                                  lastDate: DateTime(2101),
-                                );
-                                if (picked != null) {
+              SizedBox(width: 10),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(5.0),
+                ),
+                child: IconButton(
+                  icon: Icon(Icons.date_range),
+                  onPressed: () async {
+                    showModalBottomSheet(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return Container(
+                          height: 200.0,
+                          child: Column(
+                            children: [
+                              ListTile(
+                                leading: Icon(Icons.date_range),
+                                title: Text("Desde o início até agora"),
+                                onTap: () {
                                   setState(() {
-                                    _selectedDateRange = picked;
+                                    _selectedDateRange = DateTimeRange(
+                                      start: DateTime(2000), // ou outra data que você considere apropriada
+                                      end: DateTime.now(),
+                                    );
                                     _selectedDate = null; // Limpa a seleção de data única
                                   });
-                                }
-                                Navigator.pop(context); // Fecha o modal
-                              },
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  );
-                },
+                                  Navigator.pop(context); // Fecha o modal
+                                },
+                              ),
+                              ListTile(
+                                leading: Icon(Icons.date_range),
+                                title: Text("Selecionar intervalo de datas"),
+                                onTap: () async {
+                                  DateTimeRange? picked = await showDateRangePicker(
+                                    context: context,
+                                    firstDate: DateTime(2000),
+                                    lastDate: DateTime(2101),
+                                  );
+                                  if (picked != null) {
+                                    setState(() {
+                                      _selectedDateRange = picked;
+                                      _selectedDate = null; // Limpa a seleção de data única
+                                    });
+                                  }
+                                  Navigator.pop(context); // Fecha o modal
+                                },
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
-            ),
-            SizedBox(width: 10),
-            PopupMenuButton<String>(
-              icon: Icon(Icons.sort),
-              itemBuilder: (BuildContext context) => [
-                PopupMenuItem<String>(
-                  value: 'Valor (Maior para Menor)',
-                  child: ListTile(
-                    title: Text('Valor (Maior para Menor)'),
-                    onTap: () {
-                      setState(() {
-                        _expenses.sort((a, b) => b['valor'].compareTo(a['valor']));
-                        _futureExpenses.sort((a, b) => b['valor'].compareTo(a['valor']));
-                      });
-                      Navigator.pop(context);
-                    },
+              SizedBox(width: 10),
+              PopupMenuButton<String>(
+                icon: Icon(Icons.sort),
+                itemBuilder: (BuildContext context) => [
+                  PopupMenuItem<String>(
+                    value: 'Valor (Maior para Menor)',
+                    child: ListTile(
+                      title: Text('Valor (Maior para Menor)'),
+                      onTap: () {
+                        setState(() {
+                          _expenses.sort((a, b) => b['valor'].compareTo(a['valor']));
+                        });
+                        Navigator.pop(context);
+                      },
+                    ),
                   ),
-                ),
-                PopupMenuItem<String>(
-                  value: 'Valor (Menor para Maior)',
-                  child: ListTile(
-                    title: Text('Valor (Menor para Maior)'),
-                    onTap: () {
-                      setState(() {
-                        _expenses.sort((a, b) => a['valor'].compareTo(b['valor']));
-                        _futureExpenses.sort((a, b) => a['valor'].compareTo(b['valor']));
-                      });
-                      Navigator.pop(context);
-                    },
+                  PopupMenuItem<String>(
+                    value: 'Valor (Menor para Maior)',
+                    child: ListTile(
+                      title: Text('Valor (Menor para Maior)'),
+                      onTap: () {
+                        setState(() {
+                          _expenses.sort((a, b) => a['valor'].compareTo(b['valor']));
+                        });
+                        Navigator.pop(context);
+                      },
+                    ),
                   ),
-                ),
-                PopupMenuItem<String>(
-                  value: 'Data (Mais recente para Mais antiga)',
-                  child: ListTile(
-                    title: Text('Data (Mais recente para Mais antiga)'),
-                    onTap: () {
-                      setState(() {
-                        _expenses.sort((a, b) => b['data'].compareTo(a['data']));
-                        _futureExpenses.sort((a, b) => b['data'].compareTo(a['data']));
-                      });
-                      Navigator.pop(context);
-                    },
+                  PopupMenuItem<String>(
+                    value: 'Data (Mais recente para Mais antiga)',
+                    child: ListTile(
+                      title: Text('Data (Mais recente para Mais antiga)'),
+                      onTap: () {
+                        setState(() {
+                          _expenses.sort((a, b) => b['data'].compareTo(a['data']));
+                        });
+                        Navigator.pop(context);
+                      },
+                    ),
                   ),
-                ),
-                PopupMenuItem<String>(
-                  value: 'Data (Mais antiga para Mais recente)',
-                  child: ListTile(
-                    title: Text('Data (Mais antiga para Mais recente)'),
-                    onTap: () {
-                      setState(() {
-                        _expenses.sort((a, b) => a['data'].compareTo(b['data']));
-                        _futureExpenses.sort((a, b) => a['data'].compareTo(b['data']));
-                      });
-                      Navigator.pop(context);
-                    },
+                  PopupMenuItem<String>(
+                    value: 'Data (Mais antiga para Mais recente)',
+                    child: ListTile(
+                      title: Text('Data (Mais antiga para Mais recente)'),
+                      onTap: () {
+                        setState(() {
+                          _expenses.sort((a, b) => a['data'].compareTo(b['data']));
+                        });
+                        Navigator.pop(context);
+                      },
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ],
-        ),
-
-
+                ],
+              ),
+            ],
+          ),
           SizedBox(height: 16.0), // Espaçamento entre os filtros e a lista
           Expanded(
             child: ListView.builder(
@@ -256,7 +242,7 @@ class HomePageState extends State<HomePage> {
                 return Dismissible(
                   key: Key(filteredExpenses[index]["id"].toString()),
                   onDismissed: (direction) {
-                    _deleteExpense(index, expenses);
+                    _deleteExpense(index);
                   },
                   background: Container(
                     color: Colors.red,
@@ -294,50 +280,53 @@ class HomePageState extends State<HomePage> {
     );
   }
 
-  String _formatDate(String date) {
-    // Convert date from 'dd/MM/yyyy' to 'yyyy-MM-dd' format
-    DateTime parsedDate = DateFormat('dd/MM/yyyy').parse(date);
-    return DateFormat('yyyy-MM-dd').format(parsedDate);
+  List<Map<String, dynamic>> _getHomeExpenses() {
+    DateTime now = DateTime.now();
+    return _expenses.where((expense) {
+      DateTime expenseDate = DateFormat('dd/MM/yyyy').parse(expense['data']);
+      return expenseDate.isBefore(now) || expenseDate.isAtSameMomentAs(now);
+    }).toList();
   }
 
-  void _deleteExpense(int index, List<Map<String, dynamic>> expenses) async {
+  List<Map<String, dynamic>> _getFutureExpenses() {
+    DateTime now = DateTime.now();
+    return _expenses.where((expense) {
+      DateTime expenseDate = DateFormat('dd/MM/yyyy').parse(expense['data']);
+      return expenseDate.isAfter(now);
+    }).toList();
+  }
+
+  void _deleteExpense(int index) {
     setState(() {
-      expenses.removeAt(index);
+      _expenses.removeAt(index);
+      _saveExpenses();
     });
-    // Remover a despesa também do SharedPreferences
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('expenses', jsonEncode(_expenses));
-    await prefs.setString('futureExpenses', jsonEncode(_futureExpenses));
-  }
-
-  Future<void> _saveExpenses(List<Map<String, dynamic>> expenses, String key) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString(key, jsonEncode(expenses));
-  }
-
-  Future<void> _loadExpenses(String key) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? expensesString = prefs.getString(key);
-    print("expensesString ${expensesString}");
-    if (expensesString != null) {
-      List<Map<String, dynamic>> expenses = jsonDecode(expensesString).cast<Map<String, dynamic>>();
-      print("expenses: ${expenses}");
-      setState(() {
-        if (key == 'expenses') {
-          _expenses = expenses;
-          print("entrou em expense");
-        } else {
-          _futureExpenses = expenses;
-          print("entrou em futureexpense");
-        }
-      });
-    }
   }
 
   @override
   void initState() {
     super.initState();
-    _loadExpenses('expenses');
-    _loadExpenses('futureExpenses');
+    _loadExpenses();
+  }
+
+  void _saveExpenses() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String> expenseList = _expenses.map((expense) => jsonEncode(expense)).toList();
+    await prefs.setStringList('expenses', expenseList);
+  }
+
+  void _loadExpenses() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String>? expenseList = prefs.getStringList('expenses');
+    if (expenseList != null) {
+      setState(() {
+        _expenses = expenseList.map((expense) => jsonDecode(expense) as Map<String, dynamic>).toList();
+      });
+    }
+  }
+
+  String _formatDate(String date) {
+    DateTime parsedDate = DateFormat('dd/MM/yyyy').parse(date);
+    return DateFormat('yyyy-MM-dd').format(parsedDate);
   }
 }

@@ -7,11 +7,10 @@ class CadastroPage extends StatefulWidget {
   const CadastroPage({Key? key}) : super(key: key);
 
   @override
-  State<CadastroPage> createState() => _CadastrarDispesa();
+  State<CadastroPage> createState() => _CadastrarDespesa();
 }
 
-class _CadastrarDispesa extends State<CadastroPage> {
-  static List<Map<String, dynamic>> _items = [];
+class _CadastrarDespesa extends State<CadastroPage> {
   TextEditingController _nomeController = TextEditingController();
   TextEditingController _valorController = TextEditingController();
   TextEditingController _dataController = TextEditingController();
@@ -35,9 +34,7 @@ class _CadastrarDispesa extends State<CadastroPage> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: const Text(
-          'Cadastrar Despesas',
-        ),
+        title: const Text('Cadastrar Despesas'),
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -97,31 +94,15 @@ class _CadastrarDispesa extends State<CadastroPage> {
               SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
-                  DateTime now = DateTime.now();
-                  DateTime selectedDate = DateFormat('dd/MM/yyyy').parse(_dataController.text);
+                  Map<String, dynamic> newExpense = {
+                    "id": DateTime.now().millisecondsSinceEpoch,
+                    "nome": _nomeController.text,
+                    "valor": double.parse(_valorController.text),
+                    "data": _dataController.text,
+                    "tipo": _tipoDespesa,
+                  };
 
-                  if (selectedDate.isAfter(now)) {
-                    Map<String, dynamic> newExpense = {
-                      "id": _items.length + 1,
-                      "nome": _nomeController.text,
-                      "valor": double.parse(_valorController.text),
-                      "data": _dataController.text,
-                      "tipo": _tipoDespesa,
-                    };
-
-                    Navigator.pop(context, {"data": newExpense, "status": 1});
-                  } else {
-                    Map<String, dynamic> newExpense = {
-                      "id": _items.length + 1,
-                      "nome": _nomeController.text,
-                      "valor": double.parse(_valorController.text),
-                      "data": _dataController.text,
-                      "tipo": _tipoDespesa, 
-                    };
-                    _items.add(newExpense);
-
-                    Navigator.pop(context, {"data": newExpense, "status": 0});
-                  }
+                  Navigator.pop(context, newExpense);
                 },
                 child: Text('Add Item'),
               ),
