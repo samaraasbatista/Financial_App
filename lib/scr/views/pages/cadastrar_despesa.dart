@@ -85,7 +85,8 @@ class _CadastrarDispesa extends State<CadastroPage> {
                   'Lazer',
                   'Gasolina',
                   'Comida',
-                  'Roupa'
+                  'Roupa',
+                  'Transporte'
                 ].map<DropdownMenuItem<String>>((String value) {
                   return DropdownMenuItem<String>(
                     value: value,
