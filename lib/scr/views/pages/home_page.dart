@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_application_1/scr/views/pages/cadastrar_despesa.dart';
+import 'package:flutter_application_1/scr/views/pages/calculadora_juros_compostos.dart';
+
 
 class HomePage extends StatefulWidget {
   @override
@@ -16,7 +18,7 @@ class HomePageState extends State<HomePage> {
   DateTime? _selectedDate; // Variável para armazenar a data selecionada
   DateTimeRange? _selectedDateRange; // Variável para armazenar o intervalo de datas selecionado
 
-  @override
+ @override
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 2,
@@ -32,11 +34,39 @@ class HomePageState extends State<HomePage> {
             ],
           ),
           backgroundColor: Colors.black,
-          actions: [],
           bottom: TabBar(
             tabs: [
               Tab(text: 'Home'),
               Tab(text: 'Futuros'),
+            ],
+          ),
+        ),
+        drawer: Drawer(
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: <Widget>[
+              DrawerHeader(
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                ),
+                child: Text(
+                  'Menu',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                  ),
+                ),
+              ),
+              ListTile(
+                leading: Icon(Icons.calculate),
+                title: Text('Calculadora Juros Compostos'),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => CalculadoraJurosCompostosPage()),
+                  );
+                },
+              ),
             ],
           ),
         ),
