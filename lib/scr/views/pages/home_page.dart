@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_application_1/scr/views/pages/cadastrar_despesa.dart';
-import 'package:flutter_application_1/scr/views/pages/calculadora_juros_compostos.dart';
+
+import 'cadastrar_despesa.dart';
+import 'cadastrar_receita.dart';
+import 'calculadora_juros_compostos.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -13,46 +15,61 @@ class HomePage extends StatefulWidget {
 }
 
 class HomePageState extends State<HomePage> {
-  List<Map<String, dynamic>> _expenses = [];
-  String _selectedType = 'Todos'; // Variável para armazenar o tipo selecionado
-  DateTime? _selectedDate; // Variável para armazenar a data selecionada
-  DateTimeRange? _selectedDateRange; // Variável para armazenar o intervalo de datas selecionado
-  double _totalBalance = 0.00; // Variável para armazenar o saldo total
+  List<Map<String, dynamic>> _transactions = [];
+  List<Map<String, dynamic>> _incomes = [];
+  String _selectedType = 'Todos';
+  DateTime? _selectedDate;
+  DateTimeRange? _selectedDateRange;
+  double _totalBalance = 0.00;
 
   @override
   void initState() {
     super.initState();
-    _loadExpenses();
+    _loadTransactions();
   }
 
   void _calculateTotalBalance() {
     setState(() {
-      _totalBalance = _expenses.fold(0.0, (sum, item) => sum + item['valor']);
+      double incomeSum = _incomes.fold(0.0, (sum, item) => sum + item['valor']);
+      double expenseSum = _transactions.fold(0.0, (sum, item) => sum + item['valor']);
+      _totalBalance = _totalBalance + incomeSum - expenseSum;
     });
   }
 
-  void _saveExpenses() async {
+  void _saveTransactions() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    List<String> expenseList = _expenses.map((expense) => jsonEncode(expense)).toList();
-    await prefs.setStringList('expenses', expenseList);
+    List<String> transactionList = _transactions.map((transaction) => jsonEncode(transaction)).toList();
+    List<String> incomeList = _incomes.map((income) => jsonEncode(income)).toList();
+    await prefs.setStringList('transactions', transactionList);
+    await prefs.setStringList('incomes', incomeList);
     _calculateTotalBalance();
   }
 
-  void _loadExpenses() async {
+  void _loadTransactions() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    List<String>? expenseList = prefs.getStringList('expenses');
-    if (expenseList != null) {
+    List<String>? transactionList = prefs.getStringList('transactions');
+    List<String>? incomeList = prefs.getStringList('incomes');
+    if (transactionList != null) {
       setState(() {
-        _expenses = expenseList.map((expense) => jsonDecode(expense) as Map<String, dynamic>).toList();
+        _transactions = transactionList.map((transaction) => jsonDecode(transaction) as Map<String, dynamic>).toList();
+      });
+    }
+    if (incomeList != null) {
+      setState(() {
+        _incomes = incomeList.map((income) => jsonDecode(income) as Map<String, dynamic>).toList();
         _calculateTotalBalance();
       });
     }
   }
 
-  void _deleteExpense(int index) {
+  void _deleteTransaction(int index, bool isIncome) {
     setState(() {
-      _expenses.removeAt(index);
-      _saveExpenses();
+      if (isIncome) {
+        _incomes.removeAt(index);
+      } else {
+        _transactions.removeAt(index);
+      }
+      _saveTransactions();
     });
   }
 
@@ -61,19 +78,19 @@ class HomePageState extends State<HomePage> {
     return DateFormat('yyyy-MM-dd').format(parsedDate);
   }
 
-  List<Map<String, dynamic>> _getHomeExpenses() {
+  List<Map<String, dynamic>> _getHomeTransactions() {
     DateTime now = DateTime.now();
-    return _expenses.where((expense) {
-      DateTime expenseDate = DateFormat('dd/MM/yyyy').parse(expense['data']);
-      return expenseDate.isBefore(now) || expenseDate.isAtSameMomentAs(now);
+    return _transactions.where((transaction) {
+      DateTime transactionDate = DateFormat('dd/MM/yyyy').parse(transaction['data']);
+      return transactionDate.isBefore(now) || transactionDate.isAtSameMomentAs(now);
     }).toList();
   }
 
-  List<Map<String, dynamic>> _getFutureExpenses() {
+  List<Map<String, dynamic>> _getFutureTransactions() {
     DateTime now = DateTime.now();
-    return _expenses.where((expense) {
-      DateTime expenseDate = DateFormat('dd/MM/yyyy').parse(expense['data']);
-      return expenseDate.isAfter(now);
+    return _transactions.where((transaction) {
+      DateTime transactionDate = DateFormat('dd/MM/yyyy').parse(transaction['data']);
+      return transactionDate.isAfter(now);
     }).toList();
   }
 
@@ -148,86 +165,110 @@ class HomePageState extends State<HomePage> {
             Expanded(
               child: TabBarView(
                 children: [
-                  _buildExpenseList(_getHomeExpenses()),
-                  _buildExpenseList(_getFutureExpenses()),
+                  _buildTransactionList(_getHomeTransactions(), false),
+                  _buildTransactionList(_getFutureTransactions(), false),
                 ],
               ),
             ),
           ],
         ),
-        floatingActionButton: FloatingActionButton(
-          backgroundColor: Colors.red,
-          onPressed: () async {
-            final Map<String, dynamic>? newExpense = await Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const CadastroPage()),
-            );
+        floatingActionButton: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            FloatingActionButton(
+              backgroundColor: Colors.green,
+              onPressed: () async {
+                final Map<String, dynamic>? newIncome = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CadastroIncomePage()),
+                );
 
-            if (newExpense != null) {
-              setState(() {
-                _expenses.add(newExpense);
-                _saveExpenses();
-              });
-            }
-          },
-          child: const Icon(Icons.add),
+                if (newIncome != null) {
+                  setState(() {
+                    _incomes.add(newIncome);
+                    _saveTransactions();
+                  });
+                }
+              },
+              heroTag: 'incomeButton',
+              child: const Icon(Icons.add), // Unique heroTag
+            ),
+            const SizedBox(height: 10),
+            FloatingActionButton(
+              backgroundColor: Colors.red,
+              onPressed: () async {
+                final Map<String, dynamic>? newTransaction = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CadastroPage()),
+                );
+
+                if (newTransaction != null) {
+                  setState(() {
+                    _transactions.add(newTransaction);
+                    _saveTransactions();
+                  });
+                }
+              },
+              heroTag: 'expenseButton',
+              child: const Icon(Icons.remove), // Unique heroTag
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildExpenseList(List<Map<String, dynamic>> expenses) {
-    List<Map<String, dynamic>> filteredExpenses = _selectedType == 'Todos'
-        ? expenses
-        : expenses.where((expense) => expense['tipo'] == _selectedType).toList();
+  Widget _buildTransactionList(List<Map<String, dynamic>> transactions, bool isIncome) {
+    List<Map<String, dynamic>> filteredTransactions = transactions.where((transaction) {
+      bool matchesType = _selectedType == 'Todos' || transaction['tipo'] == _selectedType;
+      bool matchesDate = true;
+      if (_selectedDate != null) {
+        matchesDate = transaction['data'] == DateFormat('dd/MM/yyyy').format(_selectedDate!);
+      }
+      if (_selectedDateRange != null) {
+        DateTime transactionDate = DateFormat('dd/MM/yyyy').parse(transaction['data']);
+        matchesDate = transactionDate.isAfter(_selectedDateRange!.start) && transactionDate.isBefore(_selectedDateRange!.end);
+      }
+      return matchesType && matchesDate;
+    }).toList();
 
-    if (_selectedDate != null) {
-      filteredExpenses = filteredExpenses
-          .where((expense) => _formatDate(expense['data']) == DateFormat('yyyy-MM-dd').format(_selectedDate!))
-          .toList();
-    } else if (_selectedDateRange != null) {
-      filteredExpenses = filteredExpenses
-          .where((expense) {
-            DateTime expenseDate = DateFormat('yyyy-MM-dd').parse(_formatDate(expense['data']));
-            return expenseDate.isAfter(_selectedDateRange!.start.subtract(const Duration(days: 1))) &&
-                expenseDate.isBefore(_selectedDateRange!.end.add(const Duration(days: 1)));
-          })
-          .toList();
-    }
-
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(5.0),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: _selectedType,
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        _selectedType = newValue!;
-                      });
-                    },
-                    items: <String>[
-                      'Todos', 'Saúde e Bem-Estar', 'Streamings', 'Lazer',
-                      'Gasolina', 'Comida', 'Roupa', 'Transporte'
-                    ].map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
-                      );
-                    }).toList(),
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  value: _selectedType,
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      _selectedType = newValue!;
+                    });
+                  },
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    labelText: 'Tipo',
                   ),
+                  items: <String>[
+                    'Todos',
+                    'Saúde e Bem-Estar',
+                    'Streamings',
+                    'Lazer',
+                    'Gasolina',
+                    'Comida',
+                    'Roupa',
+                    'Transporte',
+                    'Salário',
+                    'Freelance',
+                    'Presente',
+                    'Outros'
+                  ].map<DropdownMenuItem<String>>((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
                 ),
               ),
               const SizedBox(width: 10),
@@ -253,30 +294,54 @@ class HomePageState extends State<HomePage> {
                                 onTap: () {
                                   setState(() {
                                     _selectedDateRange = DateTimeRange(
-                                      start: DateTime(2000), // ou outra data que você considere apropriada
+                                      start: DateTime(2000),
                                       end: DateTime.now(),
                                     );
-                                    _selectedDate = null; // Limpa a seleção de data única
+                                    _selectedDate = null;
                                   });
-                                  Navigator.pop(context); // Fecha o modal
+                                  Navigator.pop(context);
                                 },
                               ),
                               ListTile(
-                                leading: const Icon(Icons.date_range),
-                                title: const Text("Selecionar intervalo de datas"),
+                                leading: const Icon(Icons.today),
+                                title: const Text("Selecionar data"),
                                 onTap: () async {
-                                  DateTimeRange? picked = await showDateRangePicker(
+                                  Navigator.pop(context);
+                                  final DateTime? picked = await showDatePicker(
                                     context: context,
+                                    initialDate: _selectedDate ?? DateTime.now(),
                                     firstDate: DateTime(2000),
                                     lastDate: DateTime(2101),
                                   );
                                   if (picked != null) {
                                     setState(() {
-                                      _selectedDateRange = picked;
-                                      _selectedDate = null; // Limpa a seleção de data única
+                                      _selectedDate = picked;
+                                      _selectedDateRange = null;
                                     });
                                   }
-                                  Navigator.pop(context); // Fecha o modal
+                                },
+                              ),
+                              ListTile(
+                                leading: const Icon(Icons.calendar_today),
+                                title: const Text("Selecionar intervalo de datas"),
+                                onTap: () async {
+                                  Navigator.pop(context);
+                                  final DateTimeRange? picked = await showDateRangePicker(
+                                    context: context,
+                                    firstDate: DateTime(2000),
+                                    lastDate: DateTime(2101),
+                                    initialDateRange: _selectedDateRange ??
+                                        DateTimeRange(
+                                          start: DateTime.now().subtract(const Duration(days: 7)),
+                                          end: DateTime.now(),
+                                        ),
+                                  );
+                                  if (picked != null) {
+                                    setState(() {
+                                      _selectedDateRange = picked;
+                                      _selectedDate = null;
+                                    });
+                                  }
                                 },
                               ),
                             ],
@@ -287,104 +352,44 @@ class HomePageState extends State<HomePage> {
                   },
                 ),
               ),
-              const SizedBox(width: 10),
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.sort),
-                itemBuilder: (BuildContext context) => [
-                  PopupMenuItem<String>(
-                    value: 'Valor (Maior para Menor)',
-                    child: ListTile(
-                      title: const Text('Valor (Maior para Menor)'),
-                      onTap: () {
-                        setState(() {
-                          _expenses.sort((a, b) => b['valor'].compareTo(a['valor']));
-                        });
-                        Navigator.pop(context);
-                      },
-                    ),
-                  ),
-                  PopupMenuItem<String>(
-                    value: 'Valor (Menor para Maior)',
-                    child: ListTile(
-                      title: const Text('Valor (Menor para Maior)'),
-                      onTap: () {
-                        setState(() {
-                          _expenses.sort((a, b) => a['valor'].compareTo(b['valor']));
-                        });
-                        Navigator.pop(context);
-                      },
-                    ),
-                  ),
-                  PopupMenuItem<String>(
-                    value: 'Data (Mais recente para Mais antiga)',
-                    child: ListTile(
-                      title: const Text('Data (Mais recente para Mais antiga)'),
-                      onTap: () {
-                        setState(() {
-                          _expenses.sort((a, b) => b['data'].compareTo(a['data']));
-                        });
-                        Navigator.pop(context);
-                      },
-                    ),
-                  ),
-                  PopupMenuItem<String>(
-                    value: 'Data (Mais antiga para Mais recente)',
-                    child: ListTile(
-                      title: const Text('Data (Mais antiga para Mais recente)'),
-                      onTap: () {
-                        setState(() {
-                          _expenses.sort((a, b) => a['data'].compareTo(b['data']));
-                        });
-                        Navigator.pop(context);
-                      },
-                    ),
-                  ),
-                ],
-              ),
             ],
           ),
-          const SizedBox(height: 16.0), // Espaçamento entre os filtros e a lista
-          Expanded(
-            child: ListView.builder(
-              itemCount: filteredExpenses.length,
-              itemBuilder: (context, index) {
-                return Dismissible(
-                  key: Key(filteredExpenses[index]["id"].toString()),
-                  onDismissed: (direction) {
-                    _deleteExpense(index);
-                  },
-                  background: Container(
-                    color: Colors.red,
-                    alignment: Alignment.centerRight,
-                    child: const Padding(
-                      padding: EdgeInsets.only(right: 20.0),
-                      child: Icon(
-                        Icons.delete,
-                        color: Colors.white,
-                      ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            itemCount: filteredTransactions.length,
+            itemBuilder: (context, index) {
+              Map<String, dynamic> transaction = filteredTransactions[index];
+              return Dismissible(
+                key: Key(transaction['id'].toString()),
+                onDismissed: (direction) {
+                  _deleteTransaction(index, isIncome);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('${transaction['nome']} deletado')),
+                  );
+                },
+                background: Container(color: Colors.red),
+                child: Card(
+                  child: ListTile(
+                    title: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(transaction['nome']),
+                        Text(
+                          transaction['data'],
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      ],
                     ),
+                    subtitle: Text('R\$ ${transaction['valor']}'),
+                    textColor: isIncome ? Colors.green : Colors.red,
                   ),
-                  child: Card(
-                    margin: const EdgeInsets.all(10),
-                    color: const Color.fromARGB(255, 238, 238, 238),
-                    child: ListTile(
-                      title: Text(filteredExpenses[index]["nome"]),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("Valor: R\$ ${filteredExpenses[index]["valor"]}"),
-                          Text("Data: ${filteredExpenses[index]["data"]}"),
-                          Text("Tipo: ${filteredExpenses[index]["tipo"]}"),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
+                ),
+              );
+            },
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
-class CadastroPage extends StatefulWidget {
-  const CadastroPage({super.key});
+class CadastroIncomePage extends StatefulWidget {
+  const CadastroIncomePage({super.key});
 
   @override
-  State<CadastroPage> createState() => _CadastrarDespesa();
+  State<CadastroIncomePage> createState() => _CadastrarReceita();
 }
 
-class _CadastrarDespesa extends State<CadastroPage> {
+class _CadastrarReceita extends State<CadastroIncomePage> {
   final TextEditingController _nomeController = TextEditingController();
   final TextEditingController _valorController = TextEditingController();
   final TextEditingController _dataController = TextEditingController();
-  String _tipoDespesa = "Saúde e Bem-Estar"; // Valor padrão
+  String _tipoReceita = "Salário"; // Valor padrão
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -34,7 +34,7 @@ class _CadastrarDespesa extends State<CadastroPage> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: const Text('Cadastrar Despesas'),
+        title: const Text('Cadastrar Receita'),
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -70,20 +70,17 @@ class _CadastrarDespesa extends State<CadastroPage> {
                 style: TextStyle(fontSize: 16),
               ),
               DropdownButton<String>(
-                value: _tipoDespesa,
+                value: _tipoReceita,
                 onChanged: (String? newValue) {
                   setState(() {
-                    _tipoDespesa = newValue!;
+                    _tipoReceita = newValue!;
                   });
                 },
                 items: <String>[
-                  'Saúde e Bem-Estar',
-                  'Streamings',
-                  'Lazer',
-                  'Gasolina',
-                  'Comida',
-                  'Roupa',
-                  'Transporte'
+                  'Salário',
+                  'Freelance',
+                  'Presente',
+                  'Outros'
                 ].map<DropdownMenuItem<String>>((String value) {
                   return DropdownMenuItem<String>(
                     value: value,
@@ -94,17 +91,17 @@ class _CadastrarDespesa extends State<CadastroPage> {
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
-                  Map<String, dynamic> newExpense = {
+                  Map<String, dynamic> newIncome = {
                     "id": DateTime.now().millisecondsSinceEpoch,
                     "nome": _nomeController.text,
                     "valor": double.parse(_valorController.text),
                     "data": _dataController.text,
-                    "tipo": _tipoDespesa,
+                    "tipo": _tipoReceita,
                   };
 
-                  Navigator.pop(context, newExpense);
+                  Navigator.pop(context, newIncome);
                 },
-                child: const Text('Adicionar Despesa'),
+                child: const Text('Adicionar Receita'),
               ),
             ],
           ),
