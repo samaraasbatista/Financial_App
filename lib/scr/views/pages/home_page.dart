@@ -1,13 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_application_1/scr/views/pages/cadastrar_despesa.dart';
 import 'package:flutter_application_1/scr/views/pages/calculadora_juros_compostos.dart';
 
-
 class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
   @override
   State<HomePage> createState() => HomePageState();
 }
@@ -17,8 +17,67 @@ class HomePageState extends State<HomePage> {
   String _selectedType = 'Todos'; // Variável para armazenar o tipo selecionado
   DateTime? _selectedDate; // Variável para armazenar a data selecionada
   DateTimeRange? _selectedDateRange; // Variável para armazenar o intervalo de datas selecionado
+  double _totalBalance = 0.00; // Variável para armazenar o saldo total
 
- @override
+  @override
+  void initState() {
+    super.initState();
+    _loadExpenses();
+  }
+
+  void _calculateTotalBalance() {
+    setState(() {
+      _totalBalance = _expenses.fold(0.0, (sum, item) => sum + item['valor']);
+    });
+  }
+
+  void _saveExpenses() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String> expenseList = _expenses.map((expense) => jsonEncode(expense)).toList();
+    await prefs.setStringList('expenses', expenseList);
+    _calculateTotalBalance();
+  }
+
+  void _loadExpenses() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String>? expenseList = prefs.getStringList('expenses');
+    if (expenseList != null) {
+      setState(() {
+        _expenses = expenseList.map((expense) => jsonDecode(expense) as Map<String, dynamic>).toList();
+        _calculateTotalBalance();
+      });
+    }
+  }
+
+  void _deleteExpense(int index) {
+    setState(() {
+      _expenses.removeAt(index);
+      _saveExpenses();
+    });
+  }
+
+  String _formatDate(String date) {
+    DateTime parsedDate = DateFormat('dd/MM/yyyy').parse(date);
+    return DateFormat('yyyy-MM-dd').format(parsedDate);
+  }
+
+  List<Map<String, dynamic>> _getHomeExpenses() {
+    DateTime now = DateTime.now();
+    return _expenses.where((expense) {
+      DateTime expenseDate = DateFormat('dd/MM/yyyy').parse(expense['data']);
+      return expenseDate.isBefore(now) || expenseDate.isAtSameMomentAs(now);
+    }).toList();
+  }
+
+  List<Map<String, dynamic>> _getFutureExpenses() {
+    DateTime now = DateTime.now();
+    return _expenses.where((expense) {
+      DateTime expenseDate = DateFormat('dd/MM/yyyy').parse(expense['data']);
+      return expenseDate.isAfter(now);
+    }).toList();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 2,
@@ -27,14 +86,14 @@ class HomePageState extends State<HomePage> {
           title: Row(
             children: [
               Image.asset('assets/images/perfil.png', width: 70, height: 70),
-              Text(
+              const Text(
                 'Samara Alves',
                 style: TextStyle(fontSize: 18, color: Colors.white),
               )
             ],
           ),
           backgroundColor: Colors.black,
-          bottom: TabBar(
+          bottom: const TabBar(
             tabs: [
               Tab(text: 'Home'),
               Tab(text: 'Futuros'),
@@ -45,7 +104,7 @@ class HomePageState extends State<HomePage> {
           child: ListView(
             padding: EdgeInsets.zero,
             children: <Widget>[
-              DrawerHeader(
+              const DrawerHeader(
                 decoration: BoxDecoration(
                   color: Colors.black,
                 ),
@@ -58,8 +117,8 @@ class HomePageState extends State<HomePage> {
                 ),
               ),
               ListTile(
-                leading: Icon(Icons.calculate),
-                title: Text('Calculadora Juros Compostos'),
+                leading: const Icon(Icons.calculate),
+                title: const Text('Calculadora Juros Compostos'),
                 onTap: () {
                   Navigator.push(
                     context,
@@ -70,19 +129,38 @@ class HomePageState extends State<HomePage> {
             ],
           ),
         ),
-        body: TabBarView(
+        body: Column(
           children: [
-            _buildExpenseList(_getHomeExpenses()),
-            _buildExpenseList(_getFutureExpenses()),
+            Container(
+              padding: const EdgeInsets.all(16.0),
+              color: Colors.black,
+              width: double.infinity,
+              child: Text(
+                'R\$ $_totalBalance',
+                style: const TextStyle(
+                  fontSize: 24,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  _buildExpenseList(_getHomeExpenses()),
+                  _buildExpenseList(_getFutureExpenses()),
+                ],
+              ),
+            ),
           ],
         ),
         floatingActionButton: FloatingActionButton(
-          child: Icon(Icons.add),
           backgroundColor: Colors.red,
           onPressed: () async {
             final Map<String, dynamic>? newExpense = await Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => CadastroPage()),
+              MaterialPageRoute(builder: (context) => const CadastroPage()),
             );
 
             if (newExpense != null) {
@@ -92,6 +170,7 @@ class HomePageState extends State<HomePage> {
               });
             }
           },
+          child: const Icon(Icons.add),
         ),
       ),
     );
@@ -110,8 +189,8 @@ class HomePageState extends State<HomePage> {
       filteredExpenses = filteredExpenses
           .where((expense) {
             DateTime expenseDate = DateFormat('yyyy-MM-dd').parse(_formatDate(expense['data']));
-            return expenseDate.isAfter(_selectedDateRange!.start.subtract(Duration(days: 1))) &&
-                expenseDate.isBefore(_selectedDateRange!.end.add(Duration(days: 1)));
+            return expenseDate.isAfter(_selectedDateRange!.start.subtract(const Duration(days: 1))) &&
+                expenseDate.isBefore(_selectedDateRange!.end.add(const Duration(days: 1)));
           })
           .toList();
     }
@@ -119,14 +198,14 @@ class HomePageState extends State<HomePage> {
     return Container(
       width: double.infinity,
       height: double.infinity,
-      padding: EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               Container(
-                padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+                padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.grey),
                   borderRadius: BorderRadius.circular(5.0),
@@ -151,26 +230,26 @@ class HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
               Container(
-                padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+                padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.grey),
                   borderRadius: BorderRadius.circular(5.0),
                 ),
                 child: IconButton(
-                  icon: Icon(Icons.date_range),
+                  icon: const Icon(Icons.date_range),
                   onPressed: () async {
                     showModalBottomSheet(
                       context: context,
                       builder: (BuildContext context) {
-                        return Container(
+                        return SizedBox(
                           height: 200.0,
                           child: Column(
                             children: [
                               ListTile(
-                                leading: Icon(Icons.date_range),
-                                title: Text("Desde o início até agora"),
+                                leading: const Icon(Icons.date_range),
+                                title: const Text("Desde o início até agora"),
                                 onTap: () {
                                   setState(() {
                                     _selectedDateRange = DateTimeRange(
@@ -183,8 +262,8 @@ class HomePageState extends State<HomePage> {
                                 },
                               ),
                               ListTile(
-                                leading: Icon(Icons.date_range),
-                                title: Text("Selecionar intervalo de datas"),
+                                leading: const Icon(Icons.date_range),
+                                title: const Text("Selecionar intervalo de datas"),
                                 onTap: () async {
                                   DateTimeRange? picked = await showDateRangePicker(
                                     context: context,
@@ -208,14 +287,14 @@ class HomePageState extends State<HomePage> {
                   },
                 ),
               ),
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
               PopupMenuButton<String>(
-                icon: Icon(Icons.sort),
+                icon: const Icon(Icons.sort),
                 itemBuilder: (BuildContext context) => [
                   PopupMenuItem<String>(
                     value: 'Valor (Maior para Menor)',
                     child: ListTile(
-                      title: Text('Valor (Maior para Menor)'),
+                      title: const Text('Valor (Maior para Menor)'),
                       onTap: () {
                         setState(() {
                           _expenses.sort((a, b) => b['valor'].compareTo(a['valor']));
@@ -227,7 +306,7 @@ class HomePageState extends State<HomePage> {
                   PopupMenuItem<String>(
                     value: 'Valor (Menor para Maior)',
                     child: ListTile(
-                      title: Text('Valor (Menor para Maior)'),
+                      title: const Text('Valor (Menor para Maior)'),
                       onTap: () {
                         setState(() {
                           _expenses.sort((a, b) => a['valor'].compareTo(b['valor']));
@@ -239,7 +318,7 @@ class HomePageState extends State<HomePage> {
                   PopupMenuItem<String>(
                     value: 'Data (Mais recente para Mais antiga)',
                     child: ListTile(
-                      title: Text('Data (Mais recente para Mais antiga)'),
+                      title: const Text('Data (Mais recente para Mais antiga)'),
                       onTap: () {
                         setState(() {
                           _expenses.sort((a, b) => b['data'].compareTo(a['data']));
@@ -251,7 +330,7 @@ class HomePageState extends State<HomePage> {
                   PopupMenuItem<String>(
                     value: 'Data (Mais antiga para Mais recente)',
                     child: ListTile(
-                      title: Text('Data (Mais antiga para Mais recente)'),
+                      title: const Text('Data (Mais antiga para Mais recente)'),
                       onTap: () {
                         setState(() {
                           _expenses.sort((a, b) => a['data'].compareTo(b['data']));
@@ -264,7 +343,7 @@ class HomePageState extends State<HomePage> {
               ),
             ],
           ),
-          SizedBox(height: 16.0), // Espaçamento entre os filtros e a lista
+          const SizedBox(height: 16.0), // Espaçamento entre os filtros e a lista
           Expanded(
             child: ListView.builder(
               itemCount: filteredExpenses.length,
@@ -277,7 +356,7 @@ class HomePageState extends State<HomePage> {
                   background: Container(
                     color: Colors.red,
                     alignment: Alignment.centerRight,
-                    child: Padding(
+                    child: const Padding(
                       padding: EdgeInsets.only(right: 20.0),
                       child: Icon(
                         Icons.delete,
@@ -287,7 +366,7 @@ class HomePageState extends State<HomePage> {
                   ),
                   child: Card(
                     margin: const EdgeInsets.all(10),
-                    color: Color.fromARGB(255, 238, 238, 238),
+                    color: const Color.fromARGB(255, 238, 238, 238),
                     child: ListTile(
                       title: Text(filteredExpenses[index]["nome"]),
                       subtitle: Column(
@@ -307,55 +386,5 @@ class HomePageState extends State<HomePage> {
         ],
       ),
     );
-  }
-
-  List<Map<String, dynamic>> _getHomeExpenses() {
-    DateTime now = DateTime.now();
-    return _expenses.where((expense) {
-      DateTime expenseDate = DateFormat('dd/MM/yyyy').parse(expense['data']);
-      return expenseDate.isBefore(now) || expenseDate.isAtSameMomentAs(now);
-    }).toList();
-  }
-
-  List<Map<String, dynamic>> _getFutureExpenses() {
-    DateTime now = DateTime.now();
-    return _expenses.where((expense) {
-      DateTime expenseDate = DateFormat('dd/MM/yyyy').parse(expense['data']);
-      return expenseDate.isAfter(now);
-    }).toList();
-  }
-
-  void _deleteExpense(int index) {
-    setState(() {
-      _expenses.removeAt(index);
-      _saveExpenses();
-    });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _loadExpenses();
-  }
-
-  void _saveExpenses() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    List<String> expenseList = _expenses.map((expense) => jsonEncode(expense)).toList();
-    await prefs.setStringList('expenses', expenseList);
-  }
-
-  void _loadExpenses() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    List<String>? expenseList = prefs.getStringList('expenses');
-    if (expenseList != null) {
-      setState(() {
-        _expenses = expenseList.map((expense) => jsonDecode(expense) as Map<String, dynamic>).toList();
-      });
-    }
-  }
-
-  String _formatDate(String date) {
-    DateTime parsedDate = DateFormat('dd/MM/yyyy').parse(date);
-    return DateFormat('yyyy-MM-dd').format(parsedDate);
   }
 }
