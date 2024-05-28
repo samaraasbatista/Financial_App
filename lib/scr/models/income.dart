@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 class CadastroIncomePage extends StatefulWidget {
-  const CadastroIncomePage({Key? key}) : super(key: key);
+  const CadastroIncomePage({super.key});
 
   @override
   State<CadastroIncomePage> createState() => _CadastrarReceita();
