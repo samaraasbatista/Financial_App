@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class CadastroIncomePage extends StatefulWidget {
-  const CadastroIncomePage({super.key});
+  const CadastroIncomePage({Key? key}) : super(key: key);
 
   @override
   State<CadastroIncomePage> createState() => _CadastrarReceita();
@@ -13,7 +14,24 @@ class _CadastrarReceita extends State<CadastroIncomePage> {
   final TextEditingController _nomeController = TextEditingController();
   final TextEditingController _valorController = TextEditingController();
   final TextEditingController _dataController = TextEditingController();
-  String _tipoReceita = "Salário"; // Valor padrão
+  String _tipoReceita = ""; // Valor padrão
+  List<String> _tiposReceitas = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTiposReceitas();
+  }
+
+  void _loadTiposReceitas() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _tiposReceitas = prefs.getStringList('tiposReceitas') ?? [];
+      if (_tiposReceitas.isNotEmpty) {
+        _tipoReceita = _tiposReceitas[0];
+      }
+    });
+  }
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -76,12 +94,7 @@ class _CadastrarReceita extends State<CadastroIncomePage> {
                     _tipoReceita = newValue!;
                   });
                 },
-                items: <String>[
-                  'Salário',
-                  'Freelance',
-                  'Presente',
-                  'Outros'
-                ].map<DropdownMenuItem<String>>((String value) {
+                items: _tiposReceitas.map<DropdownMenuItem<String>>((String value) {
                   return DropdownMenuItem<String>(
                     value: value,
                     child: Text(value),
