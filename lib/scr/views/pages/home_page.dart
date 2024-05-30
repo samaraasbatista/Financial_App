@@ -5,13 +5,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'cadastrar_despesa.dart';
 import 'cadastrar_receita.dart';
+import 'cadastrar_tipo_despesa.dart';
 import 'calculadora_juros_compostos.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
-
   @override
-  State<HomePage> createState() => HomePageState();
+  HomePageState createState() => HomePageState();
 }
 
 class HomePageState extends State<HomePage> {
@@ -20,6 +19,7 @@ class HomePageState extends State<HomePage> {
   DateTime? _selectedDate;
   DateTimeRange? _selectedDateRange;
   double _totalBalance = 0.00;
+  List<String> _tiposDespesas = [];
 
   @override
   void initState() {
@@ -44,6 +44,7 @@ class HomePageState extends State<HomePage> {
     List<String> transactionList = _transactions.map((transaction) => jsonEncode(transaction)).toList();
     await prefs.setStringList('transactions', transactionList);
     _calculateTotalBalance();
+    _updateTiposDespesas();
   }
 
   void _loadTransactions() async {
@@ -53,14 +54,33 @@ class HomePageState extends State<HomePage> {
       setState(() {
         _transactions = transactionList.map((transaction) => jsonDecode(transaction) as Map<String, dynamic>).toList();
         _calculateTotalBalance();
+        _updateTiposDespesas();
       });
     }
   }
 
   void _deleteTransaction(int index) {
     setState(() {
-      _transactions.removeAt(index);
+      Map<String, dynamic> removedTransaction = _transactions.removeAt(index);
       _saveTransactions();
+      _updateBalanceAfterDeletion(removedTransaction);
+    });
+  }
+
+  void _updateBalanceAfterDeletion(Map<String, dynamic> transaction) {
+    setState(() {
+      if (transaction['tipo'] == 'Salário' || transaction['tipo'] == 'Freelance' || transaction['tipo'] == 'Presente' || transaction['tipo'] == 'Outros') {
+        _totalBalance -= transaction['valor'];
+      } else {
+        _totalBalance += transaction['valor'];
+      }
+    });
+  }
+
+  void _updateTiposDespesas() {
+    setState(() {
+      _tiposDespesas = _transactions.map((transaction) => transaction['tipo'] as String).toSet().toList();
+      _tiposDespesas.insert(0, 'Todos'); // Adiciona a opção 'Todos' no início
     });
   }
 
@@ -131,6 +151,16 @@ class HomePageState extends State<HomePage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => CalculadoraJurosCompostosPage()),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.category),
+                title: const Text('Cadastrar Tipo de Despesa'),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => CadastroTipoDespesaPage()),
                   );
                 },
               ),
@@ -241,20 +271,7 @@ class HomePageState extends State<HomePage> {
                     border: OutlineInputBorder(),
                     labelText: 'Tipo',
                   ),
-                  items: <String>[
-                    'Todos',
-                    'Saúde e Bem-Estar',
-                    'Streamings',
-                    'Lazer',
-                    'Gasolina',
-                    'Comida',
-                    'Roupa',
-                    'Transporte',
-                    'Salário',
-                    'Freelance',
-                    'Presente',
-                    'Outros'
-                  ].map<DropdownMenuItem<String>>((String value) {
+                  items: _tiposDespesas.map<DropdownMenuItem<String>>((String value) {
                     return DropdownMenuItem<String>(
                       value: value,
                       child: Text(value),
@@ -289,31 +306,33 @@ class HomePageState extends State<HomePage> {
                         });
                       },
                     ),
+                    const SizedBox(width: 8.0),
                     IconButton(
-                      icon: const Icon(Icons.calendar_view_day),
+                      icon: const Icon(Icons.date_range),
                       onPressed: () {
                         showDateRangePicker(
                           context: context,
-                          initialDateRange: _selectedDateRange,
                           firstDate: DateTime(2000),
                           lastDate: DateTime(2100),
-                        ).then((pickedRange) {
-                          if (pickedRange != null) {
+                        ).then((pickedDateRange) {
+                          if (pickedDateRange != null) {
                             setState(() {
-                              _selectedDateRange = pickedRange;
+                              _selectedDateRange = pickedDateRange;
                               _selectedDate = null;
                             });
                           }
                         });
                       },
                     ),
-                    if (_selectedDate != null)
-                      Text(DateFormat('dd/MM/yyyy').format(_selectedDate!))
-                    else if (_selectedDateRange != null)
-                      Text(
-                        'De ${DateFormat('dd/MM/yyyy').format(_selectedDateRange!.start)} '
-                        'até ${DateFormat('dd/MM/yyyy').format(_selectedDateRange!.end)}',
-                      ),
+                    IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        setState(() {
+                          _selectedDate = null;
+                          _selectedDateRange = null;
+                        });
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -324,33 +343,32 @@ class HomePageState extends State<HomePage> {
           child: ListView.builder(
             itemCount: filteredTransactions.length,
             itemBuilder: (context, index) {
-              bool isIncome = filteredTransactions[index]['tipo'] == 'Salário' ||
-                  filteredTransactions[index]['tipo'] == 'Freelance' ||
-                  filteredTransactions[index]['tipo'] == 'Presente' ||
-                  filteredTransactions[index]['tipo'] == 'Outros';
-
+              final transaction = filteredTransactions[index];
               return Dismissible(
-                key: Key(filteredTransactions[index].toString()),
+                key: UniqueKey(),
+                direction: DismissDirection.endToStart,
                 onDismissed: (direction) {
                   _deleteTransaction(index);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Transação deletada')),
+                  );
                 },
-                background: Container(color: Colors.red),
-                child: Card(
-                  color: isIncome ? Colors.green[50] : Colors.red[50],
-                  child: ListTile(
-                    title: Text(
-                      filteredTransactions[index]['nome']?.isNotEmpty == true
-                          ? filteredTransactions[index]['nome']
-                          : 'Sem descrição',
+                background: Container(
+                  color: Colors.red,
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                  child: const Icon(Icons.delete, color: Colors.white),
+                ),
+                child: ListTile(
+                  title: Text(transaction['nome'] ?? ''),
+                  subtitle: Text(transaction['data'] ?? ''),
+                  trailing: Text(
+                    'R\$ ${transaction['valor']?.toStringAsFixed(2) ?? '0.00'}',
+                    style: TextStyle(
+                      color: (transaction['tipo'] == 'Salário' || transaction['tipo'] == 'Freelance' || transaction['tipo'] == 'Presente' || transaction['tipo'] == 'Outros')
+                          ? Colors.green
+                          : Colors.red,
                     ),
-                    subtitle: Text(filteredTransactions[index]['data'] ?? 'Sem data'),
-                    trailing: Text(
-                      'R\$ ${(filteredTransactions[index]['valor'] ?? 0.0).toStringAsFixed(2)}',
-                      style: TextStyle(color: isIncome ? Colors.green : Colors.red),
-                    ),
-                    onLongPress: () {
-                      _deleteTransaction(index);
-                    },
                   ),
                 ),
               );

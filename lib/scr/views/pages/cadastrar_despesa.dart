@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 
 class CadastroPage extends StatefulWidget {
@@ -14,7 +15,24 @@ class _CadastrarDespesa extends State<CadastroPage> {
   final TextEditingController _nomeController = TextEditingController();
   final TextEditingController _valorController = TextEditingController();
   final TextEditingController _dataController = TextEditingController();
-  String _tipoDespesa = "Saúde e Bem-Estar"; // Valor padrão
+  String _tipoDespesa = ""; // Valor padrão
+  List<String> _tiposDespesas = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTiposDespesas();
+  }
+
+  void _loadTiposDespesas() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _tiposDespesas = prefs.getStringList('tiposDespesas') ?? [];
+      if (_tiposDespesas.isNotEmpty) {
+        _tipoDespesa = _tiposDespesas[0];
+      }
+    });
+  }
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -77,15 +95,7 @@ class _CadastrarDespesa extends State<CadastroPage> {
                     _tipoDespesa = newValue!;
                   });
                 },
-                items: <String>[
-                  'Saúde e Bem-Estar',
-                  'Streamings',
-                  'Lazer',
-                  'Gasolina',
-                  'Comida',
-                  'Roupa',
-                  'Transporte'
-                ].map<DropdownMenuItem<String>>((String value) {
+                items: _tiposDespesas.map<DropdownMenuItem<String>>((String value) {
                   return DropdownMenuItem<String>(
                     value: value,
                     child: Text(value),
