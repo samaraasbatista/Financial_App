@@ -16,7 +16,6 @@ class HomePage extends StatefulWidget {
 
 class HomePageState extends State<HomePage> {
   List<Map<String, dynamic>> _transactions = [];
-  List<Map<String, dynamic>> _incomes = [];
   String _selectedType = 'Todos';
   DateTime? _selectedDate;
   DateTimeRange? _selectedDateRange;
@@ -30,45 +29,37 @@ class HomePageState extends State<HomePage> {
 
   void _calculateTotalBalance() {
     setState(() {
-      double incomeSum = _incomes.fold(0.0, (sum, item) => sum + item['valor']);
-      double expenseSum = _transactions.fold(0.0, (sum, item) => sum + item['valor']);
-      _totalBalance = _totalBalance + incomeSum - expenseSum;
+      double incomeSum = _transactions
+          .where((item) => item['tipo'] == 'Salário' || item['tipo'] == 'Freelance' || item['tipo'] == 'Presente' || item['tipo'] == 'Outros')
+          .fold(0.0, (sum, item) => sum + (item['valor'] ?? 0.0));
+      double expenseSum = _transactions
+          .where((item) => !(item['tipo'] == 'Salário' || item['tipo'] == 'Freelance' || item['tipo'] == 'Presente' || item['tipo'] == 'Outros'))
+          .fold(0.0, (sum, item) => sum + (item['valor'] ?? 0.0));
+      _totalBalance = incomeSum - expenseSum;
     });
   }
 
   void _saveTransactions() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     List<String> transactionList = _transactions.map((transaction) => jsonEncode(transaction)).toList();
-    List<String> incomeList = _incomes.map((income) => jsonEncode(income)).toList();
     await prefs.setStringList('transactions', transactionList);
-    await prefs.setStringList('incomes', incomeList);
     _calculateTotalBalance();
   }
 
   void _loadTransactions() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     List<String>? transactionList = prefs.getStringList('transactions');
-    List<String>? incomeList = prefs.getStringList('incomes');
     if (transactionList != null) {
       setState(() {
         _transactions = transactionList.map((transaction) => jsonDecode(transaction) as Map<String, dynamic>).toList();
-      });
-    }
-    if (incomeList != null) {
-      setState(() {
-        _incomes = incomeList.map((income) => jsonDecode(income) as Map<String, dynamic>).toList();
         _calculateTotalBalance();
       });
     }
   }
 
-  void _deleteTransaction(int index, bool isIncome) {
+  void _deleteTransaction(int index) {
     setState(() {
-      if (isIncome) {
-        _incomes.removeAt(index);
-      } else {
-        _transactions.removeAt(index);
-      }
+      _transactions.removeAt(index);
       _saveTransactions();
     });
   }
@@ -81,7 +72,7 @@ class HomePageState extends State<HomePage> {
   List<Map<String, dynamic>> _getHomeTransactions() {
     DateTime now = DateTime.now();
     return _transactions.where((transaction) {
-      DateTime transactionDate = DateFormat('dd/MM/yyyy').parse(transaction['data']);
+      DateTime transactionDate = DateFormat('dd/MM/yyyy').parse(transaction['data'] ?? '');
       return transactionDate.isBefore(now) || transactionDate.isAtSameMomentAs(now);
     }).toList();
   }
@@ -89,7 +80,7 @@ class HomePageState extends State<HomePage> {
   List<Map<String, dynamic>> _getFutureTransactions() {
     DateTime now = DateTime.now();
     return _transactions.where((transaction) {
-      DateTime transactionDate = DateFormat('dd/MM/yyyy').parse(transaction['data']);
+      DateTime transactionDate = DateFormat('dd/MM/yyyy').parse(transaction['data'] ?? '');
       return transactionDate.isAfter(now);
     }).toList();
   }
@@ -165,8 +156,8 @@ class HomePageState extends State<HomePage> {
             Expanded(
               child: TabBarView(
                 children: [
-                  _buildTransactionList(_getHomeTransactions(), false),
-                  _buildTransactionList(_getFutureTransactions(), false),
+                  _buildTransactionList(_getHomeTransactions()),
+                  _buildTransactionList(_getFutureTransactions()),
                 ],
               ),
             ),
@@ -185,7 +176,7 @@ class HomePageState extends State<HomePage> {
 
                 if (newIncome != null) {
                   setState(() {
-                    _incomes.add(newIncome);
+                    _transactions.add(newIncome);
                     _saveTransactions();
                   });
                 }
@@ -218,7 +209,7 @@ class HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildTransactionList(List<Map<String, dynamic>> transactions, bool isIncome) {
+  Widget _buildTransactionList(List<Map<String, dynamic>> transactions) {
     List<Map<String, dynamic>> filteredTransactions = transactions.where((transaction) {
       bool matchesType = _selectedType == 'Todos' || transaction['tipo'] == _selectedType;
       bool matchesDate = true;
@@ -226,7 +217,7 @@ class HomePageState extends State<HomePage> {
         matchesDate = transaction['data'] == DateFormat('dd/MM/yyyy').format(_selectedDate!);
       }
       if (_selectedDateRange != null) {
-        DateTime transactionDate = DateFormat('dd/MM/yyyy').parse(transaction['data']);
+        DateTime transactionDate = DateFormat('dd/MM/yyyy').parse(transaction['data'] ?? '');
         matchesDate = transactionDate.isAfter(_selectedDateRange!.start) && transactionDate.isBefore(_selectedDateRange!.end);
       }
       return matchesType && matchesDate;
@@ -273,83 +264,57 @@ class HomePageState extends State<HomePage> {
               ),
               const SizedBox(width: 10),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+                padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 5.0),
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(5.0),
+                  borderRadius: BorderRadius.circular(8.0),
                 ),
-                child: IconButton(
-                  icon: const Icon(Icons.date_range),
-                  onPressed: () async {
-                    showModalBottomSheet(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return SizedBox(
-                          height: 200.0,
-                          child: Column(
-                            children: [
-                              ListTile(
-                                leading: const Icon(Icons.date_range),
-                                title: const Text("Desde o início até agora"),
-                                onTap: () {
-                                  setState(() {
-                                    _selectedDateRange = DateTimeRange(
-                                      start: DateTime(2000),
-                                      end: DateTime.now(),
-                                    );
-                                    _selectedDate = null;
-                                  });
-                                  Navigator.pop(context);
-                                },
-                              ),
-                              ListTile(
-                                leading: const Icon(Icons.today),
-                                title: const Text("Selecionar data"),
-                                onTap: () async {
-                                  Navigator.pop(context);
-                                  final DateTime? picked = await showDatePicker(
-                                    context: context,
-                                    initialDate: _selectedDate ?? DateTime.now(),
-                                    firstDate: DateTime(2000),
-                                    lastDate: DateTime(2101),
-                                  );
-                                  if (picked != null) {
-                                    setState(() {
-                                      _selectedDate = picked;
-                                      _selectedDateRange = null;
-                                    });
-                                  }
-                                },
-                              ),
-                              ListTile(
-                                leading: const Icon(Icons.calendar_today),
-                                title: const Text("Selecionar intervalo de datas"),
-                                onTap: () async {
-                                  Navigator.pop(context);
-                                  final DateTimeRange? picked = await showDateRangePicker(
-                                    context: context,
-                                    firstDate: DateTime(2000),
-                                    lastDate: DateTime(2101),
-                                    initialDateRange: _selectedDateRange ??
-                                        DateTimeRange(
-                                          start: DateTime.now().subtract(const Duration(days: 7)),
-                                          end: DateTime.now(),
-                                        ),
-                                  );
-                                  if (picked != null) {
-                                    setState(() {
-                                      _selectedDateRange = picked;
-                                      _selectedDate = null;
-                                    });
-                                  }
-                                },
-                              ),
-                            ],
-                          ),
-                        );
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.calendar_today),
+                      onPressed: () {
+                        showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now(),
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        ).then((pickedDate) {
+                          if (pickedDate != null) {
+                            setState(() {
+                              _selectedDate = pickedDate;
+                              _selectedDateRange = null;
+                            });
+                          }
+                        });
                       },
-                    );
-                  },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.calendar_view_day),
+                      onPressed: () {
+                        showDateRangePicker(
+                          context: context,
+                          initialDateRange: _selectedDateRange,
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        ).then((pickedRange) {
+                          if (pickedRange != null) {
+                            setState(() {
+                              _selectedDateRange = pickedRange;
+                              _selectedDate = null;
+                            });
+                          }
+                        });
+                      },
+                    ),
+                    if (_selectedDate != null)
+                      Text(DateFormat('dd/MM/yyyy').format(_selectedDate!))
+                    else if (_selectedDateRange != null)
+                      Text(
+                        'De ${DateFormat('dd/MM/yyyy').format(_selectedDateRange!.start)} '
+                        'até ${DateFormat('dd/MM/yyyy').format(_selectedDateRange!.end)}',
+                      ),
+                  ],
                 ),
               ),
             ],
@@ -359,30 +324,33 @@ class HomePageState extends State<HomePage> {
           child: ListView.builder(
             itemCount: filteredTransactions.length,
             itemBuilder: (context, index) {
-              Map<String, dynamic> transaction = filteredTransactions[index];
+              bool isIncome = filteredTransactions[index]['tipo'] == 'Salário' ||
+                  filteredTransactions[index]['tipo'] == 'Freelance' ||
+                  filteredTransactions[index]['tipo'] == 'Presente' ||
+                  filteredTransactions[index]['tipo'] == 'Outros';
+
               return Dismissible(
-                key: Key(transaction['id'].toString()),
+                key: Key(filteredTransactions[index].toString()),
                 onDismissed: (direction) {
-                  _deleteTransaction(index, isIncome);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('${transaction['nome']} deletado')),
-                  );
+                  _deleteTransaction(index);
                 },
                 background: Container(color: Colors.red),
                 child: Card(
+                  color: isIncome ? Colors.green[50] : Colors.red[50],
                   child: ListTile(
-                    title: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(transaction['nome']),
-                        Text(
-                          transaction['data'],
-                          style: TextStyle(color: Colors.grey[600]),
-                        ),
-                      ],
+                    title: Text(
+                      filteredTransactions[index]['nome']?.isNotEmpty == true
+                          ? filteredTransactions[index]['nome']
+                          : 'Sem descrição',
                     ),
-                    subtitle: Text('R\$ ${transaction['valor']}'),
-                    textColor: isIncome ? Colors.green : Colors.red,
+                    subtitle: Text(filteredTransactions[index]['data'] ?? 'Sem data'),
+                    trailing: Text(
+                      'R\$ ${(filteredTransactions[index]['valor'] ?? 0.0).toStringAsFixed(2)}',
+                      style: TextStyle(color: isIncome ? Colors.green : Colors.red),
+                    ),
+                    onLongPress: () {
+                      _deleteTransaction(index);
+                    },
                   ),
                 ),
               );
