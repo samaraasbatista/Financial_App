@@ -17,9 +17,8 @@ class AppWidget extends StatelessWidget {
                 ? Brightness.dark
                 : Brightness.light,
           ),
-          initialRoute: '/',
+          initialRoute: '/home',  // Alterar a rota inicial para '/home'
           routes: {
-            '/': (context) => LoginPage(),
             '/home': (context) => HomePage(),
             '/cadastro' : (context) => CadastroPage(),
           },
