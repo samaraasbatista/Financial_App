@@ -30,11 +30,20 @@ class HomePageState extends State<HomePage> {
 
   void _calculateTotalBalance() {
     setState(() {
+      DateTime now = DateTime.now();
       double incomeSum = _transactions
-          .where((item) => item['tipo'] == 'Salário' || item['tipo'] == 'Freelance' || item['tipo'] == 'Presente' || item['tipo'] == 'Outros')
+          .where((item) {
+            DateTime transactionDate = DateFormat('dd/MM/yyyy').parse(item['data']);
+            return (item['tipo'] == 'Salário' || item['tipo'] == 'Freelance' || item['tipo'] == 'Presente' || item['tipo'] == 'Outros') &&
+                   (transactionDate.isBefore(now) || transactionDate.isAtSameMomentAs(now));
+          })
           .fold(0.0, (sum, item) => sum + (item['valor'] ?? 0.0));
       double expenseSum = _transactions
-          .where((item) => !(item['tipo'] == 'Salário' || item['tipo'] == 'Freelance' || item['tipo'] == 'Presente' || item['tipo'] == 'Outros'))
+          .where((item) {
+            DateTime transactionDate = DateFormat('dd/MM/yyyy').parse(item['data']);
+            return !(item['tipo'] == 'Salário' || item['tipo'] == 'Freelance' || item['tipo'] == 'Presente' || item['tipo'] == 'Outros') &&
+                   (transactionDate.isBefore(now) || transactionDate.isAtSameMomentAs(now));
+          })
           .fold(0.0, (sum, item) => sum + (item['valor'] ?? 0.0));
       _totalBalance = incomeSum - expenseSum;
     });
@@ -64,17 +73,6 @@ class HomePageState extends State<HomePage> {
     setState(() {
       Map<String, dynamic> removedTransaction = _transactions.removeAt(index);
       _saveTransactions();
-      _updateBalanceAfterDeletion(removedTransaction);
-    });
-  }
-
-  void _updateBalanceAfterDeletion(Map<String, dynamic> transaction) {
-    setState(() {
-      if (transaction['tipo'] == 'Salário' || transaction['tipo'] == 'Freelance' || transaction['tipo'] == 'Presente' || transaction['tipo'] == 'Outros') {
-        _totalBalance -= transaction['valor'];
-      } else {
-        _totalBalance += transaction['valor'];
-      }
     });
   }
 
@@ -98,12 +96,35 @@ class HomePageState extends State<HomePage> {
     }).toList();
   }
 
-  List<Map<String, dynamic>> _getFutureTransactions() {
+  Map<String, List<Map<String, dynamic>>> _groupFutureTransactionsByDate() {
     DateTime now = DateTime.now();
-    return _transactions.where((transaction) {
-      DateTime transactionDate = DateFormat('dd/MM/yyyy').parse(transaction['data'] ?? '');
-      return transactionDate.isAfter(now);
-    }).toList();
+    Map<String, List<Map<String, dynamic>>> groupedTransactions = {};
+    double cumulativeBalance = _totalBalance;
+
+    _transactions
+        .where((transaction) {
+          DateTime transactionDate = DateFormat('dd/MM/yyyy').parse(transaction['data'] ?? '');
+          return transactionDate.isAfter(now);
+        })
+        .forEach((transaction) {
+          String date = transaction['data'] ?? '';
+          if (!groupedTransactions.containsKey(date)) {
+            groupedTransactions[date] = [];
+          }
+          groupedTransactions[date]!.add(transaction);
+
+          // Calculate cumulative balance up to this date
+          double transactionValue = transaction['valor'] ?? 0.0;
+          if (transaction['tipo'] == 'Salário' || transaction['tipo'] == 'Freelance' || transaction['tipo'] == 'Presente' || transaction['tipo'] == 'Outros') {
+            cumulativeBalance += transactionValue;
+          } else {
+            cumulativeBalance -= transactionValue;
+          }
+
+          transaction['cumulativeBalance'] = cumulativeBalance;
+        });
+
+    return groupedTransactions;
   }
 
   @override
@@ -130,55 +151,54 @@ class HomePageState extends State<HomePage> {
           ),
         ),
         drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: <Widget>[
-            const DrawerHeader(
-              decoration: BoxDecoration(
-                color: Colors.black,
-              ),
-              child: Text(
-                'Menu',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: <Widget>[
+              const DrawerHeader(
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                ),
+                child: Text(
+                  'Menu',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                  ),
                 ),
               ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.calculate),
-              title: const Text('Calculadora Juros Compostos'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => CalculadoraJurosCompostosPage()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.category),
-              title: const Text('Cadastrar Tipo de Despesa'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => CadastroTipoDespesaPage()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.category),
-              title: const Text('Cadastrar Tipo de Receita'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => CadastroTipoReceitaPage()),
-                );
-              },
-            ),
-          ],
+              ListTile(
+                leading: const Icon(Icons.calculate),
+                title: const Text('Calculadora Juros Compostos'),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => CalculadoraJurosCompostosPage()),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.category),
+                title: const Text('Cadastrar Tipo de Despesa'),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => CadastroTipoDespesaPage()),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.category),
+                title: const Text('Cadastrar Tipo de Receita'),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => CadastroTipoReceitaPage()),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
-      ),
-
         body: Column(
           children: [
             Container(
@@ -199,7 +219,7 @@ class HomePageState extends State<HomePage> {
               child: TabBarView(
                 children: [
                   _buildTransactionList(_getHomeTransactions()),
-                  _buildTransactionList(_getFutureTransactions()),
+                  _buildFutureTransactionList(),
                 ],
               ),
             ),
@@ -252,18 +272,20 @@ class HomePageState extends State<HomePage> {
   }
 
   Widget _buildTransactionList(List<Map<String, dynamic>> transactions) {
-    List<Map<String, dynamic>> filteredTransactions = transactions.where((transaction) {
-      bool matchesType = _selectedType == 'Todos' || transaction['tipo'] == _selectedType;
-      bool matchesDate = true;
-      if (_selectedDate != null) {
-        matchesDate = transaction['data'] == DateFormat('dd/MM/yyyy').format(_selectedDate!);
-      }
-      if (_selectedDateRange != null) {
+    List<Map<String, dynamic>> filteredTransactions = transactions;
+
+    if (_selectedType != 'Todos') {
+      filteredTransactions = filteredTransactions.where((transaction) => transaction['tipo'] == _selectedType).toList();
+    }
+
+    if (_selectedDate != null) {
+      filteredTransactions = filteredTransactions.where((transaction) => transaction['data'] == DateFormat('dd/MM/yyyy').format(_selectedDate!)).toList();
+    } else if (_selectedDateRange != null) {
+      filteredTransactions = filteredTransactions.where((transaction) {
         DateTime transactionDate = DateFormat('dd/MM/yyyy').parse(transaction['data'] ?? '');
-        matchesDate = transactionDate.isAfter(_selectedDateRange!.start) && transactionDate.isBefore(_selectedDateRange!.end);
-      }
-      return matchesType && matchesDate;
-    }).toList();
+        return transactionDate.isAfter(_selectedDateRange!.start) && transactionDate.isBefore(_selectedDateRange!.end);
+      }).toList();
+    }
 
     return Column(
       children: [
@@ -388,6 +410,57 @@ class HomePageState extends State<HomePage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildFutureTransactionList() {
+    Map<String, List<Map<String, dynamic>>> groupedTransactions = _groupFutureTransactionsByDate();
+    List<String> sortedDates = groupedTransactions.keys.toList()..sort((a, b) => DateFormat('dd/MM/yyyy').parse(a).compareTo(DateFormat('dd/MM/yyyy').parse(b)));
+
+    return ListView.builder(
+      itemCount: sortedDates.length,
+      itemBuilder: (context, index) {
+        String date = sortedDates[index];
+        List<Map<String, dynamic>> transactions = groupedTransactions[date]!;
+        double cumulativeBalance = transactions.first['cumulativeBalance'];
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8.0),
+              color: Colors.grey[200],
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    date,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    'Saldo: R\$ ${cumulativeBalance.toStringAsFixed(2)}',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
+            ...transactions.map((transaction) {
+              return ListTile(
+                title: Text(transaction['nome'] ?? ''),
+                subtitle: Text(transaction['tipo'] ?? ''),
+                trailing: Text(
+                  'R\$ ${transaction['valor']?.toStringAsFixed(2) ?? '0.00'}',
+                  style: TextStyle(
+                    color: (transaction['tipo'] == 'Salário' || transaction['tipo'] == 'Freelance' || transaction['tipo'] == 'Presente' || transaction['tipo'] == 'Outros')
+                        ? Colors.green
+                        : Colors.red,
+                  ),
+                ),
+              );
+            }).toList(),
+          ],
+        );
+      },
     );
   }
 }

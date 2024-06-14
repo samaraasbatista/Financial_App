@@ -1,6 +1,5 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
 
 class CalculadoraJurosCompostosPage extends StatefulWidget {
   @override
