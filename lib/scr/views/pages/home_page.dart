@@ -200,7 +200,7 @@ class HomePageState extends State<HomePage> {
                         _selectedDate = null;
                         _selectedDateRange = null;
                       });
-                    },
+                    }, onClearFilters: () {  },
                   ),
                   FutureTransactionList(transactions: _transactions, totalBalance: _totalBalance),
                 ],

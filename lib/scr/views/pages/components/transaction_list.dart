@@ -10,6 +10,7 @@ class TransactionList extends StatelessWidget {
   final Function(String) onSelectedTypeChanged;
   final Function(DateTimeRange?) onSelectedDateRangeChanged;
   final Function() onClearDateSelection;
+  final Function() onClearFilters; // Função para limpar todos os filtros
 
   TransactionList({
     required this.transactions,
@@ -20,6 +21,7 @@ class TransactionList extends StatelessWidget {
     required this.onSelectedTypeChanged,
     required this.onSelectedDateRangeChanged,
     required this.onClearDateSelection,
+    required this.onClearFilters,
   });
 
   List<Map<String, dynamic>> _getFilteredTransactions() {
@@ -55,6 +57,7 @@ class TransactionList extends StatelessWidget {
   Widget build(BuildContext context) {
     List<Map<String, dynamic>> filteredTransactions = _getFilteredTransactions();
     double filteredBalance = _calculateFilteredBalance(filteredTransactions);
+    bool isFiltered = selectedType != 'Todos' || selectedDateRange != null; // Verifica se há algum filtro aplicado
 
     return Column(
       children: [
@@ -114,20 +117,21 @@ class TransactionList extends StatelessWidget {
             ],
           ),
         ),
-        Container(
-          padding: const EdgeInsets.all(16.0),
-          color: Colors.black,
-          width: double.infinity,
-          child: Text(
-            'Saldo Filtrado: R\$ ${filteredBalance.toStringAsFixed(2)}',
-            style: const TextStyle(
-              fontSize: 24,
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+        if (isFiltered) // Mostra apenas se houver filtro aplicado
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            width: double.infinity,
+            alignment: Alignment.centerLeft, // Alinhado ao centro à esquerda
+            child: Text(
+              'Saldo Filtrado: R\$ ${filteredBalance.toStringAsFixed(2)}',
+              style: const TextStyle(
+                fontSize: 14, // Alterado para fonte tamanho 14
+                color: Color.fromARGB(255, 117, 117, 117), // Cor cinza
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            textAlign: TextAlign.center,
           ),
-        ),
+
         Expanded(
           child: ListView.builder(
             itemCount: filteredTransactions.length,
