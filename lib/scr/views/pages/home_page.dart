@@ -12,6 +12,7 @@ import 'calculadora_juros_compostos.dart';
 
 import 'components/transaction_list.dart';
 import 'components/future_transaction_list.dart';
+import 'relatorio_grafico.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -156,6 +157,16 @@ class HomePageState extends State<HomePage> {
                   );
                 },
               ),
+              ListTile(
+                leading: const Icon(Icons.bar_chart),
+                title: const Text('Gráfico de Transações'),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => GraficoPage(transactions: _transactions)),
+                  );
+                },
+              ),
             ],
           ),
         ),
@@ -200,7 +211,14 @@ class HomePageState extends State<HomePage> {
                         _selectedDate = null;
                         _selectedDateRange = null;
                       });
-                    }, onClearFilters: () {  },
+                    },
+                    onClearFilters: () {
+                      setState(() {
+                        _selectedType = 'Todos';
+                        _selectedDate = null;
+                        _selectedDateRange = null;
+                      });
+                    },
                   ),
                   FutureTransactionList(transactions: _transactions, totalBalance: _totalBalance),
                 ],
